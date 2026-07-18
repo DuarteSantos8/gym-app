@@ -1,0 +1,8 @@
+# Übungs-Medien (via scripts/fetch-media.sh aus hasaneyldrm/exercises-dataset)
+app/img/
+app/gif/
+
+node_modules/
+data/
+*.log
+.DS_Store
