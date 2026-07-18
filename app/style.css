@@ -178,6 +178,10 @@ a{color:var(--acc)}
 /* ---------- charts ---------- */
 .chart{width:100%;overflow:hidden}
 .chart svg{display:block;width:100%;height:auto}
+.chart-i{position:relative;touch-action:pan-y}
+.ctip{position:absolute;top:-4px;background:var(--card2);border:1px solid var(--line);
+  border-radius:99px;padding:4px 12px;font-size:.76rem;font-weight:700;white-space:nowrap;
+  pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)}
 
 /* activity heatmap (GitHub-style) */
 .hm-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}

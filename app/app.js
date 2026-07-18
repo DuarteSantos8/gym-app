@@ -343,36 +343,119 @@ function renderTimer() {
 /* ============================================================
    CHARTS  (hand-rolled SVG)
    ============================================================ */
+const tsToISO = t => {
+  const d = new Date(t);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
+let CHART_SEQ = 0;
+const CHARTS = {};   // cid -> {pts:[{x,y,iso,v}], W, H, unit}
 function lineChart(points, opts) {
-  // points: [{t: ms, y: num, lbl}] sorted by t
-  const o = Object.assign({ h: 150, unit: '', color: 'var(--acc)' }, opts);
-  const W = 340, H = o.h, P = { l: 8, r: 40, t: 14, b: 20 };
+  // points: [{t: ms, y: num, d?: iso}] sorted by t
+  const o = Object.assign({ h: 150, unit: '', color: 'var(--acc)', axes: true }, opts);
+  const W = 340, H = o.h;
+  const P = { l: o.axes ? 34 : 8, r: 12, t: 10, b: o.axes ? 22 : 8 };
   if (points.length === 0) return `<div class="empty small">No data yet</div>`;
-  if (points.length === 1) points = [points[0], points[0]];
+  const single = points.length === 1;
+  if (single) points = [points[0], points[0]];
   const ys = points.map(p => p.y);
   let ymin = Math.min(...ys), ymax = Math.max(...ys);
   if (ymin === ymax) { ymin -= 1; ymax += 1; }
   const pad = (ymax - ymin) * 0.12; ymin -= pad; ymax += pad;
   const t0 = points[0].t, t1 = points[points.length-1].t || t0 + 1;
-  const X = t => t1 === t0 ? P.l : P.l + (t - t0) / (t1 - t0) * (W - P.l - P.r);
+  const X = t => t1 === t0 ? (P.l + W - P.r) / 2 : P.l + (t - t0) / (t1 - t0) * (W - P.l - P.r);
   const Y = y => P.t + (1 - (y - ymin) / (ymax - ymin)) * (H - P.t - P.b);
+
+  // y-axis: nice tick steps + gridlines + kg labels
+  let axes = '';
+  if (o.axes) {
+    const range = ymax - ymin, raw = range / 3;
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    let step = 10 * pow;
+    for (const m of [1, 2, 2.5, 5, 10]) if (raw <= m * pow) { step = m * pow; break; }
+    for (let v = Math.ceil(ymin / step) * step; v <= ymax + 1e-9; v += step) {
+      const y = Y(v).toFixed(1);
+      axes += `<line x1="${P.l}" y1="${y}" x2="${W-P.r}" y2="${y}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"/>
+        <text x="${P.l-5}" y="${+y+3.5}" text-anchor="end" font-size="9.5" fill="var(--dim)">${fmtNum(v)}</text>`;
+    }
+    // x-axis: month boundaries in between (or 3 date labels inside one month)
+    const d0 = new Date(t0), d1 = new Date(t1);
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const ticks = [];
+    let m = new Date(d0.getFullYear(), d0.getMonth() + 1, 1);
+    while (m <= d1) { ticks.push({ t: +m, txt: MONTHS[m.getMonth()] }); m = new Date(m.getFullYear(), m.getMonth() + 1, 1); }
+    if (ticks.length === 0 && !single) {
+      for (let i = 0; i <= 2; i++) {
+        const t = t0 + (t1 - t0) * i / 2;
+        const dd = new Date(t);
+        ticks.push({ t, txt: dd.getDate() + ' ' + MONTHS[dd.getMonth()], anchor: i === 0 ? 'start' : i === 2 ? 'end' : 'middle' });
+      }
+    }
+    const every = Math.max(1, Math.ceil(ticks.length / 7));
+    ticks.forEach((tk, i) => {
+      if (i % every) return;
+      const x = X(tk.t).toFixed(1);
+      axes += `<line x1="${x}" y1="${P.t}" x2="${x}" y2="${H-P.b}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"/>
+        <text x="${x}" y="${H-7}" text-anchor="${tk.anchor || 'middle'}" font-size="9.5" fill="var(--dim)">${tk.txt}</text>`;
+    });
+  }
+
   const pts = points.map(p => X(p.t).toFixed(1) + ',' + Y(p.y).toFixed(1)).join(' ');
   const last = points[points.length-1];
-  const first = points[0];
   const gid = 'g' + Math.random().toString(36).slice(2, 7);
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="aspect-ratio:${W}/${H}">
+  const cid = 'ch' + (++CHART_SEQ);
+  CHARTS[cid] = {
+    W, H, unit: o.unit,
+    pts: (single ? [points[0]] : points).map(p => ({ x: X(p.t), y: Y(p.y), iso: p.d || tsToISO(p.t), v: p.y })),
+    top: P.t, bot: H - P.b, left: P.l, right: W - P.r
+  };
+  return `<div class="chart-i" data-cid="${cid}">
+  <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="aspect-ratio:${W}/${H}">
     <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${o.color}" stop-opacity=".28"/>
       <stop offset="1" stop-color="${o.color}" stop-opacity="0"/>
     </linearGradient></defs>
+    ${axes}
     <polygon points="${P.l},${H-P.b} ${pts} ${X(last.t).toFixed(1)},${H-P.b}" fill="url(#${gid})"/>
     <polyline points="${pts}" fill="none" stroke="${o.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     <circle cx="${X(last.t).toFixed(1)}" cy="${Y(last.y).toFixed(1)}" r="4" fill="${o.color}"/>
-    <text x="${W-2}" y="${Y(last.y)+4}" text-anchor="end" font-size="11" font-weight="700" fill="var(--txt)">${fmtNum(last.y)}</text>
-    <text x="${P.l}" y="${H-6}" font-size="9.5" fill="var(--dim)">${fmtDate(new Date(first.t).toISOString().slice(0,10))}</text>
-    <text x="${W-P.r}" y="${H-6}" text-anchor="end" font-size="9.5" fill="var(--dim)">${fmtDate(new Date(last.t).toISOString().slice(0,10))}</text>
-    <text x="${P.l}" y="${P.t-3}" font-size="9.5" fill="var(--dim)">high ${fmtNum(Math.max(...ys))} · low ${fmtNum(Math.min(...ys))} ${o.unit}</text>
-  </svg>`;
+    <g class="cross" visibility="hidden">
+      <line class="cvl" x1="0" y1="${P.t}" x2="0" y2="${H-P.b}" stroke="var(--mut)" stroke-width="1" stroke-dasharray="3 3"/>
+      <line class="chl" x1="${P.l}" y1="0" x2="${W-P.r}" y2="0" stroke="var(--mut)" stroke-width="1" stroke-dasharray="3 3"/>
+      <circle class="cdot" r="5" fill="${o.color}" stroke="var(--bg)" stroke-width="2"/>
+    </g>
+  </svg>
+  <div class="ctip" style="display:none"></div></div>`;
+}
+/* finger/mouse hover: snap to nearest point, crosshair + date/value tooltip */
+function bindCharts(root) {
+  root.querySelectorAll('.chart-i').forEach(box => {
+    const d = CHARTS[box.dataset.cid];
+    if (!d || !d.pts.length) return;
+    const svg = box.querySelector('svg'), tip = box.querySelector('.ctip');
+    const cross = svg.querySelector('.cross');
+    const vl = svg.querySelector('.cvl'), hl = svg.querySelector('.chl'), dot = svg.querySelector('.cdot');
+    function show(clientX) {
+      const r = svg.getBoundingClientRect();
+      const w = r.width || d.W;
+      const vx = (clientX - r.left) / w * d.W;
+      let best = d.pts[0];
+      d.pts.forEach(p => { if (Math.abs(p.x - vx) < Math.abs(best.x - vx)) best = p; });
+      vl.setAttribute('x1', best.x); vl.setAttribute('x2', best.x);
+      hl.setAttribute('y1', best.y); hl.setAttribute('y2', best.y);
+      dot.setAttribute('cx', best.x); dot.setAttribute('cy', best.y);
+      cross.setAttribute('visibility', 'visible');
+      tip.style.display = 'block';
+      tip.textContent = fmtDate(best.iso, true) + ' · ' + fmtNum(best.v) + (d.unit ? ' ' + d.unit : '');
+      const px = best.x / d.W * w;
+      const tw = tip.offsetWidth || 110;
+      tip.style.left = Math.max(2, Math.min(w - tw - 2, px - tw / 2)) + 'px';
+    }
+    const onMove = e => { const p = e.touches ? e.touches[0] : e; if (p && p.clientX !== undefined) show(p.clientX); };
+    box.addEventListener('mousemove', onMove);
+    box.addEventListener('mousedown', onMove);
+    box.addEventListener('touchstart', onMove, { passive: true });
+    box.addEventListener('touchmove', onMove, { passive: true });
+  });
 }
 
 /* ============================================================
@@ -519,7 +602,7 @@ function viewHome(app) {
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length;
   const lastW = S.workouts[S.workouts.length-1];
 
-  const bwSpark = lineChart(S.bodyweight.slice(-30).map(b => ({t: b.t || new Date(b.d).getTime(), y: b.w})), {h: 90});
+  const bwSpark = lineChart(S.bodyweight.slice(-30).map(b => ({t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d})), {h: 90, axes: false, unit: S.unit});
 
   app.innerHTML = `
   <div class="hdr">
@@ -609,6 +692,7 @@ function viewHome(app) {
   const bp = $('#btn-goplan'); if (bp) bp.onclick = () => nav('#plan');
   const bh = $('#btn-history'); if (bh) bh.onclick = () => nav('#history');
   bindWorkoutItems(app);
+  bindCharts(app);
 }
 function setsDoneActive() {
   let n = 0; if (S.active) S.active.entries.forEach(e => e.sets.forEach(s => { if (s.done) n++; }));
@@ -1271,7 +1355,7 @@ function viewStats(app) {
   const now = Date.now();
   const bwPts = S.bodyweight
     .filter(b => statsRange === 0 || (b.t || new Date(b.d).getTime()) > now - statsRange * 86400000)
-    .map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w }));
+    .map(b => ({ t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d }));
   const bw30 = S.bodyweight.filter(b => (b.t || new Date(b.d).getTime()) > now - 30 * 86400000);
   const bwDelta30 = bw30.length > 1 ? bw30[bw30.length-1].w - bw30[0].w : null;
   const monthW = S.workouts.filter(w => w.d.slice(0, 7) === todayISO().slice(0, 7)).length;
@@ -1290,7 +1374,7 @@ function viewStats(app) {
         if (mx > 0) pts.push({ t: w.start, y: mx, d: w.d, sets: en.sets.filter(s => s.done) });
       }
     });
-    exChart = lineChart(pts.map(p => ({ t: p.t, y: p.y })), { h: 150, unit: S.unit, color: 'var(--blue)' });
+    exChart = lineChart(pts.map(p => ({ t: p.t, y: p.y, d: p.d })), { h: 150, unit: S.unit, color: 'var(--blue)' });
     exList = pts.slice(-5).reverse().map(p =>
       `<div class="row between small" style="padding:6px 0;border-bottom:1px solid var(--bg2)">
         <span class="muted">${fmtDate(p.d, true)}</span>
@@ -1352,6 +1436,7 @@ function viewStats(app) {
   const ha = $('#st-histall'); if (ha) ha.onclick = () => nav('#history');
   bindWorkoutItems(app);
   bindHeatmap(app);
+  bindCharts(app);
 }
 
 function viewHistory(app) {
