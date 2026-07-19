@@ -39,7 +39,8 @@ input,select,textarea{font:inherit;color:var(--txt)}
 img{max-width:100%}
 a{color:var(--acc)}
 
-#app{padding:calc(var(--sat) + 10px) var(--pad) calc(96px + var(--sab)); max-width:560px; margin:0 auto}
+/* bottom padding clears the tab bar AND its raised center button */
+#app{padding:calc(var(--sat) + 10px) var(--pad) calc(124px + var(--sab)); max-width:560px; margin:0 auto}
 
 /* ---------- header ---------- */
 .hdr{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px}
@@ -139,7 +140,7 @@ a{color:var(--acc)}
 .step{display:flex;align-items:center;gap:2px;background:var(--bg2);border:1px solid var(--line);border-radius:12px}
 .step button{width:38px;height:44px;font-size:1.25rem;color:var(--mut);flex:none}
 .step input{width:58px;text-align:center;background:none;border:none;font-size:1.05rem;font-weight:700;outline:none;
-  -moz-appearance:textfield}
+  -moz-appearance:textfield;appearance:textfield}
 .step input::-webkit-inner-spin-button{display:none}
 
 /* ---------- workout ---------- */
@@ -149,11 +150,20 @@ a{color:var(--acc)}
 .exmedia img{width:100%;height:340px;object-fit:contain;display:block}
 .exmedia .gifhint{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.62);color:#fff;
   border-radius:99px;padding:4px 11px;font-size:.72rem;font-weight:600}
+.sethead{display:flex;align-items:center;gap:9px;padding-bottom:2px;
+  font-size:.66rem;color:var(--dim);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.sethead .n-sp{width:26px;flex:none}
+.sethead .w-sp{flex:1.4;text-align:center}
+.sethead .r-sp{flex:1;text-align:center}
+.sethead .ck-sp{width:44px;flex:none}
 .setrow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--bg2)}
 .setrow:last-child{border-bottom:none}
 .setrow .n{width:26px;height:26px;border-radius:50%;background:var(--bg2);color:var(--mut);
   display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex:none}
-.setrow .prev{width:74px;font-size:.72rem;color:var(--dim);flex:none;line-height:1.2}
+.setrow .step.w{flex:1.4;min-width:0}
+.setrow .step.r{flex:1;min-width:0}
+.setrow .step button{width:32px;flex:none}
+.setrow .step input{width:100%;min-width:0}
 .setrow.done .n{background:var(--acc);color:#111}
 .setrow.done{opacity:.55}
 .ck{width:44px;height:44px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);

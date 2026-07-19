@@ -1133,6 +1133,7 @@ function stepperHTML(id, val, step, label) {
     <button data-st="${step}" data-for="${id}">+</button></div></div>`;
 }
 function bindSteppers(root) {
+  root.querySelectorAll('.step input').forEach(inp => inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0)));
   root.querySelectorAll('[data-st]').forEach(b => b.addEventListener('click', () => {
     const inp = root.querySelector('#' + b.dataset.for);
     const v = (parseFloat(inp.value) || 0) + parseFloat(b.dataset.st);
@@ -1250,10 +1251,10 @@ function renderActive(app) {
   <div class="hdr">
     <button class="iconbtn" id="wo-cancel">✕</button>
     <div style="text-align:center"><div style="font-weight:800">${esc(A.name)}</div>
-    <div class="sub"><span id="wo-elapsed">0:00</span> · ${doneSets}/${totalSets} sets</div></div>
+    <div class="sub"><span id="wo-elapsed">0:00</span> · <span id="wo-count">${doneSets}/${totalSets}</span> sets</div></div>
     <button class="iconbtn" id="wo-finish" style="color:var(--acc)">✓</button>
   </div>
-  <div class="wprog"><i style="width:${totalSets ? doneSets / totalSets * 100 : 0}%"></i></div>
+  <div class="wprog"><i id="wo-prog" style="width:${totalSets ? doneSets / totalSets * 100 : 0}%"></i></div>
   ${entry ? renderExerciseCard(entry, cur, A.entries.length) : `
     <div class="empty"><div class="ico">🎯</div>Freestyle workout — add your first exercise.</div>`}
   <div style="height:12px"></div>
@@ -1265,6 +1266,7 @@ function renderActive(app) {
   <button class="btn" id="wo-add">+ Add exercise</button>
   <div style="height:10px"></div>
   <button class="btn primary" id="wo-finish2">Finish workout 🏁</button>
+  <div style="height:40px"></div>
   </div>
   `;
 
@@ -1315,14 +1317,14 @@ function renderExerciseCard(entry, idx, total) {
   ${last ? `<div class="small dim" style="margin-bottom:4px">Last time (${fmtDate(last.d)}): ${last.sets.map(s => fmtNum(s.w) + '×' + s.r).join(', ')}</div>` : ''}
   ${hint}
   <div class="card" style="margin-top:10px">
+    <div class="sethead"><span class="n-sp"></span><span class="w-sp">Weight (${S.unit})</span><span class="r-sp">Reps</span><span class="ck-sp"></span></div>
     ${entry.sets.map((s, i) => `
     <div class="setrow${s.done ? ' done' : ''}" data-set="${i}">
       <div class="n">${i + 1}</div>
-      <div class="prev">${last && last.sets[i] ? fmtNum(last.sets[i].w) + ' × ' + last.sets[i].r : '—'}</div>
-      <div class="step" style="flex:1"><button data-sw="-2.5" data-si="${i}">−</button>
-        <input type="number" inputmode="decimal" data-win="${i}" value="${s.w}" style="width:100%">
+      <div class="step w"><button data-sw="-2.5" data-si="${i}">−</button>
+        <input type="number" inputmode="decimal" data-win="${i}" value="${s.w}">
         <button data-sw="2.5" data-si="${i}">+</button></div>
-      <div class="step"><button data-sr="-1" data-si="${i}">−</button>
+      <div class="step r"><button data-sr="-1" data-si="${i}">−</button>
         <input type="number" inputmode="numeric" data-rin="${i}" value="${s.r}">
         <button data-sr="1" data-si="${i}">+</button></div>
       <button class="ck${s.done ? ' on' : ''}" data-ck="${i}"><svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></svg></button>
@@ -1332,8 +1334,19 @@ function renderExerciseCard(entry, idx, total) {
   </div>`;
 }
 
+function updateWorkoutHeader() {
+  const A = S.active; if (!A) return;
+  const total = A.entries.reduce((n, e) => n + e.sets.length, 0);
+  const done = setsDoneActive();
+  const c = $('#wo-count'); if (c) c.textContent = done + '/' + total;
+  const p = $('#wo-prog'); if (p) p.style.width = (total ? done / total * 100 : 0) + '%';
+}
 function bindExerciseCard(app, entry) {
   const A = S.active;
+  // tapping a number field selects its content so typing replaces instead of appending ("060")
+  app.querySelectorAll('.setrow input').forEach(inp => {
+    inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0));
+  });
   bindMediaToggle($('#wo-media'), EXIDX[entry.id]);
   const info = $('#wo-info');
   if (info) info.onclick = () => exerciseDetailSheet(EXIDX[entry.id]);
@@ -1345,20 +1358,24 @@ function bindExerciseCard(app, entry) {
     save(); route(); toast('Weights bumped to ' + fmtNum(w) + ' ' + S.unit + ' 💪');
   };
   app.querySelectorAll('[data-win]').forEach(inp => inp.addEventListener('change', () => {
-    entry.sets[+inp.dataset.win].w = Math.max(0, parseFloat(inp.value) || 0); save();
+    const v = Math.max(0, parseFloat(inp.value) || 0);
+    entry.sets[+inp.dataset.win].w = v; inp.value = v; save();   // normalize display ("060" -> "60")
   }));
   app.querySelectorAll('[data-rin]').forEach(inp => inp.addEventListener('change', () => {
-    entry.sets[+inp.dataset.rin].r = Math.max(0, Math.round(parseFloat(inp.value) || 0)); save();
+    const v = Math.max(0, Math.round(parseFloat(inp.value) || 0));
+    entry.sets[+inp.dataset.rin].r = v; inp.value = v; save();
   }));
   app.querySelectorAll('[data-sw]').forEach(b => b.addEventListener('click', () => {
     const s = entry.sets[+b.dataset.si];
-    s.w = Math.max(0, Math.round((s.w + parseFloat(b.dataset.sw)) * 100) / 100);
-    save(); app.querySelector(`[data-win="${b.dataset.si}"]`).value = s.w;
+    const inp = app.querySelector(`[data-win="${b.dataset.si}"]`);
+    s.w = Math.max(0, Math.round(((parseFloat(inp.value) || 0) + parseFloat(b.dataset.sw)) * 100) / 100);
+    save(); inp.value = s.w;
   }));
   app.querySelectorAll('[data-sr]').forEach(b => b.addEventListener('click', () => {
     const s = entry.sets[+b.dataset.si];
-    s.r = Math.max(0, s.r + parseInt(b.dataset.sr));
-    save(); app.querySelector(`[data-rin="${b.dataset.si}"]`).value = s.r;
+    const inp = app.querySelector(`[data-rin="${b.dataset.si}"]`);
+    s.r = Math.max(0, Math.round(parseFloat(inp.value) || 0) + parseInt(b.dataset.sr));
+    save(); inp.value = s.r;
   }));
   app.querySelectorAll('[data-ck]').forEach(b => b.addEventListener('click', () => {
     const i = +b.dataset.ck;
@@ -1369,13 +1386,16 @@ function bindExerciseCard(app, entry) {
       beep(1040, .12); vibrate(30);
       const allDoneHere = entry.sets.every(x => x.done);
       const isLastEx = A.cur >= A.entries.length - 1;
-      if (!(allDoneHere && isLastEx)) startRest(S.restSec);
-      if (allDoneHere && !isLastEx) toast('Exercise done ✓ — Next ›');
-      if (allDoneHere && isLastEx) toast('All sets done — Finish 🏁');
+      // rest timer only BETWEEN sets of an exercise — not once it's finished (the recap sheet takes over)
+      if (!allDoneHere) startRest(S.restSec);
+      else { stopRest(); toast(isLastEx ? 'All sets done — Finish 🏁' : 'Exercise done ✓'); }
       if (allDoneHere && !entry.asked) { entry.asked = true; askTop = true; }
     }
     save();
-    route();
+    // in-place update — no full re-render, so the GIF keeps playing and nothing flickers
+    b.classList.toggle('on', s.done);
+    b.closest('.setrow').classList.toggle('done', s.done);
+    updateWorkoutHeader();
     if (askTop) {
       const maxW = Math.max(0, ...entry.sets.map(x => x.w || 0), entry.target.weight || 0, (S.exWeights[entry.id] || {}).w || 0);
       if (maxW > 0) topWeightSheet(entry);
@@ -1392,31 +1412,39 @@ function bindExerciseCard(app, entry) {
 /* end-of-exercise weight confirmation: tracks the working weight,
    highest ever entered becomes next time's default */
 function topWeightSheet(entry) {
+  const A = S.active;
   const ex = EXIDX[entry.id];
   if (!ex) return;
   const maxSet = Math.max(0, ...entry.sets.filter(s => s.done).map(s => s.w || 0));
   const prevBest = Math.max((S.exWeights[entry.id] || {}).w || 0, bestWeightFor(entry.id));
   const def = Math.max(maxSet, prevBest) || entry.target.weight || 0;
+  const isLastEx = A && A.cur >= A.entries.length - 1;
   const m = openModal(`
-    <h3 class="capitalize">✓ ${esc(ex.n)}</h3>
-    <div class="muted small">Exercise done! How much weight did you work with?<br>The highest weight becomes your default next time.</div>
+    <h3 class="capitalize">✅ ${esc(ex.n)} done</h3>
+    <div class="muted small">Confirm the weight you worked with — your highest becomes the default next time.</div>
     <div class="bwin"><input type="number" inputmode="decimal" step="0.5" id="tw-in" value="${def}"><span>${S.unit}</span></div>
-    ${prevBest > 0 ? `<div class="small dim" style="text-align:center;margin-bottom:12px">Previous best: ${fmtNum(prevBest)} ${S.unit}${maxSet > prevBest ? ' — <span style="color:var(--gold)">new record! 🏆</span>' : ''}</div>` : ''}
-    <button class="btn primary" id="tw-save">Save weight</button>
+    ${prevBest > 0 ? `<div class="small dim" style="text-align:center;margin-bottom:12px">Previous best: ${fmtNum(prevBest)} ${S.unit}${maxSet > prevBest ? ' — <span style="color:var(--gold)">new record! 🏆</span>' : ''}</div>` : '<div style="height:4px"></div>'}
+    <button class="btn primary" id="tw-save">${isLastEx ? 'Save & finish 🏁' : 'Save & next exercise ›'}</button>
     <div style="height:8px"></div>
-    <button class="btn ghost dim" id="tw-skip">Skip</button>`);
-  const inp = m.el.querySelector('#tw-in');
-  setTimeout(() => { inp.focus(); inp.select(); }, 250);
-  m.el.querySelector('#tw-save').onclick = () => {
+    <button class="btn ghost dim" id="tw-skip">Just close</button>`);
+  const save2 = advance => {
     const v = parseFloat(inp.value);
     if (!isFinite(v) || v < 0) { toast('Enter a valid weight'); return; }
     entry.topW = v;
     const cur = S.exWeights[entry.id];
     S.exWeights[entry.id] = { w: Math.max(v, cur ? cur.w : 0), d: todayISO() };
     save(); m.close();
-    toast('Tracked — next time starts at ' + fmtNum(S.exWeights[entry.id].w) + ' ' + S.unit + ' 📈');
+    if (advance && A) {
+      if (isLastEx) finishWorkout();
+      else { A.cur = Math.min(A.entries.length - 1, A.cur + 1); save(); route(); }
+    } else {
+      toast('Tracked — next time starts at ' + fmtNum(S.exWeights[entry.id].w) + ' ' + S.unit + ' 📈');
+    }
   };
-  m.el.querySelector('#tw-skip').onclick = () => m.close();
+  const inp = m.el.querySelector('#tw-in');
+  setTimeout(() => { inp.focus(); inp.select(); }, 250);
+  m.el.querySelector('#tw-save').onclick = () => save2(true);
+  m.el.querySelector('#tw-skip').onclick = () => save2(false);
 }
 
 function finishWorkout() {
