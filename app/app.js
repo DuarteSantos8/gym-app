@@ -1097,6 +1097,34 @@ function exercisePicker(onPick) {
   draw();
 }
 
+/* ---------- add exercise straight to a routine (from library browsing) ---------- */
+function addToRoutineSheet(ex) {
+  const m = openModal(`
+    <h3 class="capitalize">Add “${esc(ex.n)}”</h3>
+    <div class="muted small" style="margin-bottom:12px">Pick a routine — sets, reps & weight come next.</div>
+    <div class="list">
+      ${S.routines.map(r => `<div class="item" data-r="${r.id}">
+        <div style="font-size:1.3rem;flex:none">${r.emoji || '💪'}</div>
+        <div class="grow"><div class="tt">${esc(r.name)}</div><div class="ss">${r.ex.length} exercises</div></div>
+        ${r.ex.some(e => e.id === ex.id) ? '<span class="tag">already in</span>' : ''}<span class="chev">＋</span></div>`).join('')}
+      <div class="item" data-r="_new"><div style="font-size:1.3rem;flex:none">✨</div>
+        <div class="grow"><div class="tt">New routine</div><div class="ss">Create one and start with this exercise</div></div><span class="chev">＋</span></div>
+    </div>`);
+  m.el.querySelectorAll('[data-r]').forEach(el => el.addEventListener('click', () => {
+    m.close();
+    const isNew = el.dataset.r === '_new';
+    let r = isNew ? null : S.routines.find(x => x.id === el.dataset.r);
+    exConfigSheet(ex, null, cfg => {
+      if (isNew) { r = { id: uid(), name: 'New routine', emoji: '💪', ex: [] }; S.routines.push(r); }
+      if (!r) return;
+      r.ex.push({ id: ex.id, ...cfg });
+      save();
+      toast('“' + ex.n + '” added to ' + r.name + ' ✓');
+      if (isNew) nav('#plan/r/' + r.id);
+    });
+  }));
+}
+
 /* ---------- exercise config (sets/reps/weight) ---------- */
 function stepperHTML(id, val, step, label) {
   return `<div><div class="small muted" style="margin-bottom:5px;text-align:center">${label}</div>
@@ -1658,9 +1686,13 @@ function viewLibrary(app) {
         <div class="grow"><div class="tt">${esc(e.n)}</div>
         <div class="ss">${e.tg || e.bp} · ${e.eq}</div></div>
         ${bestWeightFor(e.id) ? `<span class="tag acc">${fmtNum(bestWeightFor(e.id))}</span>` : ''}
-        <span class="chev">›</span></div>`).join('') || '<div class="empty">No match 🤷</div>';
+        <button class="btn sm primary" data-addex="${e.id}" aria-label="Add to plan">＋ Plan</button></div>`).join('') || '<div class="empty">No match 🤷</div>';
     moreBtn.style.display = f.length > libShown ? '' : 'none';
     listEl.querySelectorAll('[data-ex]').forEach(el => el.addEventListener('click', () => exerciseDetailSheet(EXIDX[el.dataset.ex])));
+    listEl.querySelectorAll('[data-addex]').forEach(b => b.addEventListener('click', ev => {
+      ev.stopPropagation();
+      addToRoutineSheet(EXIDX[b.dataset.addex]);
+    }));
   }
   moreBtn.onclick = () => { libShown += 40; draw(); };
   $('#lib-q').addEventListener('input', ev => { libQ = ev.target.value.toLowerCase().trim(); libShown = 40; draw(); });
@@ -1680,9 +1712,11 @@ function exerciseDetailSheet(ex) {
       ${(ex.sm || []).slice(0, 3).map(s => `<span class="tag">${s}</span>`).join('')}
     </div>
     ${best ? `<div class="small" style="margin-bottom:6px">🏆 Best: <b class="accent">${fmtNum(best)} ${S.unit}</b>${last ? ` · last ${fmtDate(last.d)}: ${last.sets.map(s => fmtNum(s.w) + '×' + s.r).join(', ')}` : ''}</div>` : ''}
+    <button class="btn primary" id="dt-add" style="margin:10px 0 4px">＋ Add to my plan</button>
     ${ex.st && ex.st.length ? `<h4 class="sec">How to</h4><ol class="steps-list">${ex.st.map(s => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
   `);
   bindMediaToggle(m.el.querySelector('.exmedia'), ex);
+  m.el.querySelector('#dt-add').onclick = () => { m.close(); addToRoutineSheet(ex); };
 }
 
 /* ============================================================
