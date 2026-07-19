@@ -14,6 +14,7 @@ const KEY = 'gym_state_v1';
 const DEF = {
   unit: 'kg', restSec: 90, sound: true,
   theme: 'dark', accent: 'lime',      // appearance — synced with the profile
+  targetW: null,                      // goal body weight (drawn through the charts)
   bodyweight: [],          // {d:'YYYY-MM-DD', w:Number, t:ms}
   routines: [],            // {id, name, emoji, ex:[{id, sets, reps, weight}]}
   week: {},                // weekday(0-6, JS getDay) -> routineId
@@ -382,6 +383,7 @@ function lineChart(points, opts) {
   if (single) points = [points[0], points[0]];
   const ys = points.map(p => p.y);
   let ymin = Math.min(...ys), ymax = Math.max(...ys);
+  if (o.goal != null && isFinite(o.goal)) { ymin = Math.min(ymin, o.goal); ymax = Math.max(ymax, o.goal); }
   if (ymin === ymax) { ymin -= 1; ymax += 1; }
   const pad = (ymax - ymin) * 0.12; ymin -= pad; ymax += pad;
   const t0 = points[0].t, t1 = points[points.length-1].t || t0 + 1;
@@ -438,6 +440,9 @@ function lineChart(points, opts) {
       <stop offset="1" stop-color="${o.color}" stop-opacity="0"/>
     </linearGradient></defs>
     ${axes}
+    ${o.goal != null && isFinite(o.goal) ? `
+    <line x1="${P.l}" y1="${Y(o.goal).toFixed(1)}" x2="${W-P.r}" y2="${Y(o.goal).toFixed(1)}" stroke="var(--gold)" stroke-width="1.6" stroke-dasharray="7 4"/>
+    <text x="${W-P.r-2}" y="${(Y(o.goal) - 5).toFixed(1)}" text-anchor="end" font-size="9.5" font-weight="700" fill="var(--gold)">🎯 ${fmtNum(o.goal)}</text>` : ''}
     <polygon points="${P.l},${H-P.b} ${pts} ${X(last.t).toFixed(1)},${H-P.b}" fill="url(#${gid})"/>
     <polyline points="${pts}" fill="none" stroke="${o.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
     <circle cx="${X(last.t).toFixed(1)}" cy="${Y(last.y).toFixed(1)}" r="4" fill="${o.color}"/>
@@ -638,7 +643,7 @@ function viewHome(app) {
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length;
   const lastW = S.workouts[S.workouts.length-1];
 
-  const bwSpark = lineChart(S.bodyweight.slice(-30).map(b => ({t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d})), {h: 130, unit: S.unit});
+  const bwSpark = lineChart(S.bodyweight.slice(-30).map(b => ({t: b.t || new Date(b.d).getTime(), y: b.w, d: b.d})), {h: 130, unit: S.unit, goal: S.targetW});
 
   app.innerHTML = `
   <div class="hdr">
@@ -690,14 +695,18 @@ function viewHome(app) {
   <div class="card">
     <div class="row between" style="margin-bottom:6px">
       <h2 style="margin:0">Body weight</h2>
-      <button class="btn sm" id="btn-logbw">+ Log</button>
+      <div class="row" style="gap:8px">
+        <button class="btn sm" id="btn-goal" ${S.targetW ? 'style="color:var(--gold)"' : ''}>🎯 ${S.targetW ? fmtNum(S.targetW) : 'Goal'}</button>
+        <button class="btn sm" id="btn-logbw">+ Log</button>
+      </div>
     </div>
     ${bw ? `
       <div class="row" style="gap:8px;align-items:baseline">
         <div class="big">${fmtNum(bw.w)} <span class="muted" style="font-size:1rem">${S.unit}</span></div>
-        ${delta !== null ? `<span class="small" style="color:${delta > 0 ? 'var(--orange)' : delta < 0 ? 'var(--acc)' : 'var(--mut)'}">${delta > 0 ? '▲' : delta < 0 ? '▼' : '•'} ${fmtNum(Math.abs(delta))}</span>` : ''}
+        ${delta !== null ? `<span class="small" style="font-weight:700;color:${bwDeltaColor(delta, bw.w)}">${delta > 0 ? '▲' : delta < 0 ? '▼' : '•'} ${fmtNum(Math.abs(delta))}</span>` : ''}
         <span class="dim small" style="margin-left:auto">${fmtDate(bw.d, true)}</span>
       </div>
+      ${S.targetW ? `<div class="small" style="color:var(--gold);margin-top:2px">🎯 Goal ${fmtNum(S.targetW)} ${S.unit} · ${Math.abs(S.targetW - bw.w) < 0.05 ? 'reached! 🎉' : fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit + ' to ' + (S.targetW > bw.w ? 'gain' : 'lose')}</div>` : ''}
       <div class="chart" style="margin-top:8px">${bwSpark}</div>`
     : `<div class="muted small">No entries yet — log your weight to start the curve. It's also asked automatically before every workout.</div>`}
   </div>
@@ -721,6 +730,7 @@ function viewHome(app) {
 
   $('#btn-settings').onclick = () => nav('#settings');
   $('#btn-logbw').onclick = () => bwSheet();
+  const bg = $('#btn-goal'); if (bg) bg.onclick = () => goalSheet();
   $('#wk-prev').onclick = () => { weekOffset--; route(); };
   $('#wk-next').onclick = () => { weekOffset++; route(); };
   app.querySelectorAll('[data-date]').forEach(el => el.addEventListener('click', () => dayOverrideSheet(el.dataset.date)));
@@ -778,13 +788,14 @@ function calendarSheet(startDate) {
     }
     const monthWs = S.workouts.filter(w => w.d.startsWith(y + '-' + String(mo + 1).padStart(2, '0')));
     const monthVol = monthWs.reduce((a, w) => a + (w.vol || 0), 0);
+    const monthMs = monthWs.reduce((a, w) => a + Math.max(0, (w.end || w.start) - w.start), 0);
     wrap.innerHTML = `
       <div class="row between" style="margin-bottom:2px">
         <button class="iconbtn" id="cal-prev">‹</button>
         <h3 style="margin:0">${MONTHS_LONG[mo]} ${y}</h3>
         <button class="iconbtn" id="cal-next">›</button>
       </div>
-      <div class="small muted" style="text-align:center">${monthWs.length ? monthWs.length + ' workout' + (monthWs.length > 1 ? 's' : '') + ' · ' + fmtVol(monthVol) : 'No workouts this month'}</div>
+      <div class="small muted" style="text-align:center">${monthWs.length ? monthWs.length + ' workout' + (monthWs.length > 1 ? 's' : '') + ' · ' + fmtDur(monthMs) + ' · ' + fmtVol(monthVol) : 'No workouts this month'}</div>
       <div class="cal-grid">${['Mo','Tu','We','Th','Fr','Sa','Su'].map(l => `<div class="cal-h">${l}</div>`).join('')}${cells}</div>
       <div class="cal-legend">
         <span><i style="background:var(--acc)"></i>Trained</span>
@@ -834,6 +845,36 @@ function dayOverrideSheet(iso) {
     save(); m.close(); route();
     toast(v === '' ? 'Back to weekly plan' : v === 'rest' ? fmtDate(iso) + ' set to rest' : (S.routines.find(r => r.id === v) || {}).name + ' planned for ' + fmtDate(iso) + ' ✓');
   }));
+}
+
+/* ---------- target weight ---------- */
+/* delta is "good" (accent) when it moves toward the goal, red when away; neutral without a goal */
+function bwDeltaColor(delta, currentW) {
+  if (!delta) return 'var(--mut)';
+  if (!S.targetW) return 'var(--txt)';
+  const wantUp = S.targetW > currentW;
+  return (delta > 0) === wantUp ? 'var(--acc)' : 'var(--red)';
+}
+function goalSheet() {
+  const bw = lastBW();
+  const m = openModal(`
+    <h3>Target weight 🎯</h3>
+    <div class="muted small">Your goal is drawn as a line through the weight charts, and gains/losses are colored by whether they move toward it.</div>
+    <div class="bwin"><input type="number" inputmode="decimal" step="0.5" id="gw-in" value="${S.targetW || (bw ? bw.w : '')}" placeholder="0.0"><span>${S.unit}</span></div>
+    <button class="btn primary" id="gw-save">Save goal</button>
+    ${S.targetW ? '<div style="height:8px"></div><button class="btn danger" id="gw-del">Remove goal</button>' : ''}
+  `);
+  const inp = m.el.querySelector('#gw-in');
+  setTimeout(() => { inp.focus(); inp.select(); }, 250);
+  m.el.querySelector('#gw-save').onclick = () => {
+    const v = parseFloat(inp.value);
+    if (!v || v <= 0 || v > 400) { toast('Enter a valid weight'); return; }
+    S.targetW = v; save(); m.close(); route();
+    const bw2 = lastBW();
+    toast('Goal set: ' + fmtNum(v) + ' ' + S.unit + (bw2 ? ' (' + fmtNum(Math.abs(v - bw2.w)) + ' to go)' : ''));
+  };
+  const del = m.el.querySelector('#gw-del');
+  if (del) del.onclick = () => { S.targetW = null; save(); m.close(); route(); toast('Goal removed'); };
 }
 
 /* ============================================================
@@ -1395,15 +1436,16 @@ function finishWorkout() {
 
 /* ---------- activity heatmap (GitHub-style) ---------- */
 function heatmapHTML() {
-  const agg = {};                       // iso -> {n, vol}
+  // intensity = time spent training that day (minutes) — more intuitive than volume
+  const agg = {};                       // iso -> {n, vol, min}
   S.workouts.forEach(w => {
-    const a = agg[w.d] = agg[w.d] || { n: 0, vol: 0 };
-    a.n++; a.vol += w.vol || 0;
+    const a = agg[w.d] = agg[w.d] || { n: 0, vol: 0, min: 0 };
+    a.n++; a.vol += w.vol || 0; a.min += Math.max(0, Math.round(((w.end || w.start) - w.start) / 60000));
   });
-  const vols = Object.values(agg).map(a => a.vol).filter(v => v > 0).sort((a, b) => a - b);
-  const q = p => vols.length ? vols[Math.min(vols.length - 1, Math.floor(p * vols.length))] : 0;
+  const mins = Object.values(agg).map(a => a.min).filter(v => v > 0).sort((a, b) => a - b);
+  const q = p => mins.length ? mins[Math.min(mins.length - 1, Math.floor(p * mins.length))] : 0;
   const t1 = q(0.25), t2 = q(0.5), t3 = q(0.75);
-  const level = a => !a ? 0 : !a.vol ? 1 : a.vol >= t3 ? 4 : a.vol >= t2 ? 3 : a.vol >= t1 ? 2 : 1;
+  const level = a => !a ? 0 : !a.min ? 1 : a.min >= t3 ? 4 : a.min >= t2 ? 3 : a.min >= t1 ? 2 : 1;
 
   const today = new Date(); today.setHours(12, 0, 0, 0);
   const iso = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -1424,7 +1466,7 @@ function heatmapHTML() {
       const a = agg[key];
       const isToday = key === todayISO();
       const future = day > today;
-      cells += `<div class="hm-c l${level(a)}${isToday ? ' today' : ''}${future ? ' future' : ''}"${a ? ` data-hm="${key}"` : ''} title="${key}${a ? ' · ' + a.n + ' workout' + (a.n > 1 ? 's' : '') + ' · ' + fmtVol(a.vol) : ''}"></div>`;
+      cells += `<div class="hm-c l${level(a)}${isToday ? ' today' : ''}${future ? ' future' : ''}"${a ? ` data-hm="${key}"` : ''} title="${key}${a ? ' · ' + a.n + ' workout' + (a.n > 1 ? 's' : '') + ' · ' + a.min + ' min · ' + fmtVol(a.vol) : ''}"></div>`;
     }
     cols += `<div class="hm-col">${cells}</div>`;
   }
@@ -1436,7 +1478,7 @@ function heatmapHTML() {
       <div class="hm-grid">${cols}</div>
     </div>
   </div>
-  <div class="hm-legend">Less <div class="hm-c l0"></div><div class="hm-c l1"></div><div class="hm-c l2"></div><div class="hm-c l3"></div><div class="hm-c l4"></div> More</div>`;
+  <div class="hm-legend">Less time <div class="hm-c l0"></div><div class="hm-c l1"></div><div class="hm-c l2"></div><div class="hm-c l3"></div><div class="hm-c l4"></div> More time</div>`;
 }
 function bindHeatmap(root) {
   const wrap = root.querySelector('#hm-wrap');
@@ -1495,11 +1537,11 @@ function viewStats(app) {
     <div class="tile"><div class="l">Workouts</div><div class="v">${S.workouts.length}</div></div>
     <div class="tile"><div class="l">This month</div><div class="v">${monthW}</div></div>
     <div class="tile"><div class="l">Week streak</div><div class="v">${streakWeeks()} 🔥</div></div>
-    <div class="tile"><div class="l">Weight 30d</div><div class="v" style="font-size:1.15rem">${bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
+    <div class="tile"><div class="l">Weight 30d</div><div class="v" style="font-size:1.15rem;color:${bwDelta30 === null ? 'inherit' : bwDeltaColor(bwDelta30, (lastBW() || {}).w || 0)}">${bwDelta30 === null ? '—' : (bwDelta30 > 0 ? '+' : '') + fmtNum(bwDelta30) + ' ' + S.unit}</div></div>
   </div>
 
   <div class="card">
-    <h2>Activity — last 12 months</h2>
+    <h2>Activity — last 12 months <span class="dim" style="text-transform:none;letter-spacing:0">· by time trained</span></h2>
     ${heatmapHTML()}
   </div>
 
@@ -1507,13 +1549,16 @@ function viewStats(app) {
   <div class="card">
     <div class="row between" style="margin-bottom:8px">
       <h2 style="margin:0">Body weight</h2>
-      <button class="btn sm" id="st-logbw">+ Log</button>
+      <div class="row" style="gap:8px">
+        <button class="btn sm" id="st-goal" ${S.targetW ? 'style="color:var(--gold)"' : ''}>🎯 ${S.targetW ? fmtNum(S.targetW) : 'Goal'}</button>
+        <button class="btn sm" id="st-logbw">+ Log</button>
+      </div>
     </div>
     <div class="chips" style="margin-bottom:8px">
       ${[[30,'1M'],[90,'3M'],[365,'1Y'],[0,'All']].map(([d, l]) =>
         `<button class="chip${statsRange === d ? ' on' : ''}" data-range="${d}">${l}</button>`).join('')}
     </div>
-    <div class="chart">${lineChart(bwPts, { h: 160, unit: S.unit })}</div>
+    <div class="chart">${lineChart(bwPts, { h: 160, unit: S.unit, goal: S.targetW })}</div>
   </div>
 
   <div class="card">
@@ -1539,6 +1584,7 @@ function viewStats(app) {
 
   $('#btn-hist').onclick = () => nav('#history');
   $('#st-logbw').onclick = () => bwSheet();
+  $('#st-goal').onclick = () => goalSheet();
   app.querySelectorAll('[data-range]').forEach(c => c.addEventListener('click', () => { statsRange = +c.dataset.range; route(); }));
   const sel = $('#st-ex'); if (sel) sel.addEventListener('change', () => { statsEx = sel.value; route(); });
   const ha = $('#st-histall'); if (ha) ha.onclick = () => nav('#history');
