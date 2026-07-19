@@ -13,6 +13,7 @@ const BODYPARTS = [...new Set(EXDB.map(e => e.bp))].sort();
 const KEY = 'gym_state_v1';
 const DEF = {
   unit: 'kg', restSec: 90, sound: true,
+  theme: 'dark', accent: 'lime',      // appearance — synced with the profile
   bodyweight: [],          // {d:'YYYY-MM-DD', w:Number, t:ms}
   routines: [],            // {id, name, emoji, ex:[{id, sets, reps, weight}]}
   week: {},                // weekday(0-6, JS getDay) -> routineId
@@ -485,7 +486,15 @@ function bindCharts(root) {
    ============================================================ */
 let elapsedInt = null;
 function nav(hash) { location.hash = hash; }
-function route() { renderView(); updateTabbar(); }
+const ACCENTS = { lime: '#a3e635', sky: '#38bdf8', orange: '#fb923c', violet: '#a78bfa', pink: '#f472b6', red: '#f87171', teal: '#2dd4bf', gold: '#fbbf24' };
+function applyPrefs() {
+  const de = document.documentElement;
+  de.dataset.theme = S.theme === 'light' ? 'light' : 'dark';
+  de.dataset.accent = ACCENTS[S.accent] ? S.accent : 'lime';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = de.dataset.theme === 'light' ? '#f2f4f7' : '#0c0e12';
+}
+function route() { applyPrefs(); renderView(); updateTabbar(); }
 function renderView() {
   const h = (location.hash || '#home').slice(1);
   // re-rendering the same view (range chips, toggles, …) keeps the scroll position;
@@ -535,7 +544,7 @@ function updateTabbar() {
    ============================================================ */
 function viewLogin(app) {
   app.innerHTML = `
-  <div style="display:flex;flex-direction:column;justify-content:center;min-height:78vh;text-align:center">
+  <div class="narrow" style="display:flex;flex-direction:column;justify-content:center;min-height:78vh;text-align:center">
     <div style="font-size:4rem">🏋️</div>
     <h1 style="font-size:2.2rem;font-weight:800;letter-spacing:-.02em;margin:8px 0 4px">GymLog</h1>
     <div class="muted" style="margin-bottom:34px">Your workouts. Your weights. Your profile.</div>
@@ -647,6 +656,7 @@ function viewHome(app) {
     <div class="small dim" style="margin-top:8px;text-align:center">Tap a day to plan or move a session</div>
   </div>
 
+  <div class="cols"><div>
   ${S.active ? `
   <div class="card" style="border-color:var(--orange)">
     <h2 style="color:var(--orange)">Workout in progress</h2>
@@ -691,6 +701,7 @@ function viewHome(app) {
       <div class="chart" style="margin-top:8px">${bwSpark}</div>`
     : `<div class="muted small">No entries yet — log your weight to start the curve. It's also asked automatically before every workout.</div>`}
   </div>
+  </div><div>
 
   <div class="tiles">
     <div class="tile"><div class="l">This week</div><div class="v">${wThisWeek}<span class="muted" style="font-size:1rem">${plannedPerWeek ? ' / ' + plannedPerWeek : ''}</span></div></div>
@@ -705,6 +716,7 @@ function viewHome(app) {
     <button class="btn sm ghost accent" id="btn-history">See all ›</button>
   </div>
   <div class="list">${[...S.workouts].reverse().slice(0, 3).map(workoutItem).join('')}</div>` : ''}
+  </div></div>
   `;
 
   $('#btn-settings').onclick = () => nav('#settings');
@@ -817,8 +829,10 @@ function viewPlan(app) {
   app.innerHTML = `
   <div class="hdr"><div><h1>Plan</h1><div class="sub">Your weekly routine</div></div></div>
 
+  <div class="cols"><div>
   <h4 class="sec">Week schedule</h4>
-  <div class="list">${dayRows}</div>
+  <div class="list" style="display:flex;flex-direction:column">${dayRows}</div>
+  </div><div>
 
   <div class="row between" style="margin-top:22px;margin-bottom:10px">
     <h4 class="sec" style="margin:0">Routines</h4>
@@ -832,6 +846,7 @@ function viewPlan(app) {
       <span class="chev">›</span></div>`).join('')}</div>`
   : `<div class="empty"><div class="ico">📋</div>No routines yet.<br>Create one or load the starter plan.</div>
      <button class="btn" id="btn-starter2">Load starter plan (Push / Pull / Legs)</button>`}
+  </div></div>
   `;
 
   app.querySelectorAll('[data-day]').forEach(el => el.addEventListener('click', () => dayAssignSheet(+el.dataset.day)));
@@ -863,6 +878,7 @@ function viewRoutineEdit(app, rid) {
   const r = S.routines.find(x => x.id === rid);
   if (!r) { nav('#plan'); return; }
   app.innerHTML = `
+  <div class="narrow">
   <div class="hdr">
     <button class="iconbtn" id="btn-back">‹</button>
     <div style="flex:1;margin:0 12px"><input class="input" id="r-name" value="${esc(r.name)}" style="font-weight:800;font-size:1.1rem"></div>
@@ -886,6 +902,7 @@ function viewRoutineEdit(app, rid) {
   <button class="btn primary" id="btn-add-ex">+ Add exercise</button>
   <div style="height:10px"></div>
   <button class="btn danger" id="btn-del-r">Delete routine</button>
+  </div>
   `;
 
   $('#btn-back').onclick = () => nav('#plan');
@@ -1043,6 +1060,7 @@ function viewWorkout(app) {
   const todayR = effectiveRoutine(todayISO());
   const todayOvr = S.dayPlan[todayISO()] !== undefined;
   app.innerHTML = `
+  <div class="narrow">
   <div class="hdr"><div><h1>Start workout</h1><div class="sub">${DAYN[today]} — ${todayR ? 'today is ' + esc(todayR.name) : 'rest day, but no one’s stopping you'}</div></div></div>
   ${todayR ? `
   <div class="card" style="border-color:var(--acc)">
@@ -1063,6 +1081,7 @@ function viewWorkout(app) {
   <div style="height:14px"></div>
   <button class="btn" id="btn-free">🎯 Freestyle workout (pick as you go)</button>
   ${!S.routines.length ? `<div style="height:10px"></div><button class="btn primary" id="btn-starter3">Load starter plan first</button>` : ''}
+  </div>
   `;
   app.querySelectorAll('[data-start]').forEach(el => el.addEventListener('click', () => startFlow(el.dataset.start)));
   $('#btn-free').onclick = () => startFlow(null);
@@ -1094,6 +1113,7 @@ function renderActive(app) {
   const entry = A.entries[cur];
 
   app.innerHTML = `
+  <div class="narrow">
   <div class="hdr">
     <button class="iconbtn" id="wo-cancel">✕</button>
     <div style="text-align:center"><div style="font-weight:800">${esc(A.name)}</div>
@@ -1112,6 +1132,7 @@ function renderActive(app) {
   <button class="btn" id="wo-add">+ Add exercise</button>
   <div style="height:10px"></div>
   <button class="btn primary" id="wo-finish2">Finish workout 🏁</button>
+  </div>
   `;
 
   // elapsed ticker
@@ -1424,6 +1445,7 @@ function viewStats(app) {
     ${heatmapHTML()}
   </div>
 
+  <div class="cols">
   <div class="card">
     <div class="row between" style="margin-bottom:8px">
       <h2 style="margin:0">Body weight</h2>
@@ -1446,6 +1468,7 @@ function viewStats(app) {
       <div style="margin-top:8px">${exList}</div>
       <div class="small dim" style="margin-top:8px">Best set weight per workout · Best ever: <b class="accent">${fmtNum(bestWeightFor(statsEx))} ${S.unit}</b></div>`
     : '<div class="muted small">Finish your first workout to see strength curves here. 📈</div>'}
+  </div>
   </div>
 
   ${S.workouts.length ? `
@@ -1557,6 +1580,7 @@ function exerciseDetailSheet(ex) {
    ============================================================ */
 function viewSettings(app) {
   app.innerHTML = `
+  <div class="narrow">
   <div class="hdr"><button class="iconbtn" id="btn-back">‹</button>
     <div style="flex:1;margin-left:12px"><h1>Settings</h1></div></div>
 
@@ -1572,6 +1596,23 @@ function viewSettings(app) {
       ${webauthnOK() ? `<button class="btn primary" id="acc-new">✨ Create passkey profile</button>
       <div style="height:8px"></div>
       <button class="btn" id="acc-in">👤 Sign in with passkey</button>` : '<div class="small dim">Passkeys not supported in this browser.</div>'}`}
+  </div>
+
+  <div class="card">
+    <h2>Appearance <span class="dim" style="text-transform:none;letter-spacing:0">· synced with your profile</span></h2>
+    <div class="row between" style="padding:8px 0">
+      <span>Theme</span>
+      <div class="chips">
+        <button class="chip${S.theme !== 'light' ? ' on' : ''}" data-theme-set="dark">🌙 Dark</button>
+        <button class="chip${S.theme === 'light' ? ' on' : ''}" data-theme-set="light">☀️ Light</button>
+      </div>
+    </div>
+    <div style="padding:8px 0">
+      <div style="margin-bottom:10px">Accent color</div>
+      <div class="swatches">${Object.entries(ACCENTS).map(([k, c]) =>
+        `<button class="swatch${(S.accent || 'lime') === k ? ' on' : ''}" data-accent-set="${k}" style="background:${c}" aria-label="${k}"></button>`).join('')}
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -1611,6 +1652,7 @@ function viewSettings(app) {
     <div class="small muted" style="line-height:1.5">📱 In Safari: <b>Share → Add to Home Screen</b> to install GymLog as a full-screen app. All data stays on this device (localStorage) — export a backup now and then!</div>
   </div>
   <div class="dim small" style="text-align:center;margin-top:8px">GymLog · exercise data: hasaneyldrm/exercises-dataset (CC)</div>
+  </div>
   `;
 
   $('#btn-back').onclick = () => nav('#home');
@@ -1623,6 +1665,8 @@ function viewSettings(app) {
       toast('Welcome back, ' + u.name + ' 💪');
     } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') toast(e.message || 'Sign-in failed'); }
   };
+  app.querySelectorAll('[data-theme-set]').forEach(c => c.addEventListener('click', () => { S.theme = c.dataset.themeSet; save(); route(); }));
+  app.querySelectorAll('[data-accent-set]').forEach(c => c.addEventListener('click', () => { S.accent = c.dataset.accentSet; save(); route(); }));
   app.querySelectorAll('[data-unit]').forEach(c => c.addEventListener('click', () => { S.unit = c.dataset.unit; save(); route(); }));
   $('#set-rest').addEventListener('change', ev => { S.restSec = +ev.target.value; save(); });
   $('#set-sound').onclick = () => { S.sound = !S.sound; save(); route(); };

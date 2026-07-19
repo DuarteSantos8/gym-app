@@ -7,6 +7,21 @@
   --r:16px; --pad:16px;
   --sab:env(safe-area-inset-bottom,0px); --sat:env(safe-area-inset-top,0px);
 }
+/* light theme (per-account setting, synced) */
+:root[data-theme="light"]{
+  --bg:#f2f4f7; --bg2:#e7eaef; --card:#ffffff; --card2:#eef0f4;
+  --line:#d9dee6; --txt:#171b22; --mut:#5b6474; --dim:#98a0af;
+}
+/* accent palettes (per-account setting) */
+:root[data-accent="sky"]{--acc:#38bdf8;--acc2:#0ea5e9}
+:root[data-accent="orange"]{--acc:#fb923c;--acc2:#f97316}
+:root[data-accent="violet"]{--acc:#a78bfa;--acc2:#8b5cf6}
+:root[data-accent="pink"]{--acc:#f472b6;--acc2:#ec4899}
+:root[data-accent="red"]{--acc:#f87171;--acc2:#ef4444}
+:root[data-accent="teal"]{--acc:#2dd4bf;--acc2:#14b8a6}
+:root[data-accent="gold"]{--acc:#fbbf24;--acc2:#f59e0b}
+:root{--accT:color-mix(in srgb, var(--acc) 16%, transparent)}
+
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
 body{
@@ -55,6 +70,9 @@ a{color:var(--acc)}
 #tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;
   background:rgba(16,18,24,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
   border-top:1px solid var(--line);
+}
+:root[data-theme="light"] #tabbar{background:rgba(255,255,255,.86)}
+#tabbar{
   display:flex;justify-content:space-around;align-items:flex-end;
   padding:8px 6px calc(8px + var(--sab))}
 #tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -195,9 +213,9 @@ a{color:var(--acc)}
 .hm-grid{display:flex;gap:3px}
 .hm-col{display:flex;flex-direction:column;gap:3px}
 .hm-c{width:11px;height:11px;border-radius:3px;background:var(--bg2);flex:none}
-.hm-c.l1{background:#33451b}
-.hm-c.l2{background:#527221}
-.hm-c.l3{background:#7aa629}
+.hm-c.l1{background:#33451b;background:color-mix(in srgb, var(--acc) 28%, var(--bg2))}
+.hm-c.l2{background:#527221;background:color-mix(in srgb, var(--acc) 52%, var(--bg2))}
+.hm-c.l3{background:#7aa629;background:color-mix(in srgb, var(--acc) 76%, var(--bg2))}
 .hm-c.l4{background:var(--acc)}
 .hm-c.today{outline:1.5px solid var(--txt);outline-offset:-1.5px}
 .hm-c.future{opacity:.28}
@@ -229,3 +247,30 @@ a{color:var(--acc)}
 .capitalize{text-transform:capitalize}
 h4.sec{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:20px 0 10px;font-weight:700}
 .steps-list{padding-left:20px;color:var(--mut);font-size:.9rem;line-height:1.55;display:flex;flex-direction:column;gap:8px}
+
+/* accent swatches (settings) */
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.swatch{width:36px;height:36px;border-radius:50%;border:3px solid transparent;flex:none}
+.swatch.on{border-color:var(--txt)}
+
+/* ---------- desktop (≥1000px): wide dashboard layout ---------- */
+.cols{display:block}
+@media (min-width:1000px){
+  #app{max-width:1080px;padding-top:28px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .cols>*{min-width:0}
+  #app .list{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #modal-root .list,.narrow .list{display:flex;flex-direction:column}
+  .narrow{max-width:640px;margin:0 auto}
+  .tiles{grid-template-columns:repeat(4,1fr)}
+  .cols .tiles{grid-template-columns:1fr 1fr}
+  #tabbar{left:50%;right:auto;bottom:14px;transform:translateX(-50%);width:560px;
+    border:1px solid var(--line);border-radius:22px;padding:8px 10px 10px}
+  #tabbar button.start{margin-top:-30px}
+  /* margin centering (not transform) — JS drag animates transform:translateY */
+  .sheet{left:50%;right:auto;margin-left:-320px;width:640px;border-radius:22px 22px 0 0}
+  .center{width:360px}
+  #timer{left:50%;right:auto;margin-left:-260px;width:520px;bottom:110px}
+  .exmedia img{height:400px}
+  .hm-wrap{display:flex;flex-direction:column;align-items:center}
+}
