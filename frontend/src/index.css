@@ -329,3 +329,12 @@ h4.sec{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(-
 .today-row .lbl2{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .today-row .ttl{font-weight:700;font-size:.98rem;line-height:1.2;text-transform:capitalize;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- body-weight slider + stepper input ---------- */
+.bwstep{display:flex;align-items:center;justify-content:center;gap:16px;margin:18px 0 10px}
+.bw-pm{width:54px;height:54px;border-radius:50%;background:var(--card);border:1px solid var(--line);
+  font-size:1.7rem;font-weight:700;color:var(--acc);flex:none}
+.bw-pm:active{background:var(--card2);transform:scale(.94)}
+.bw-read{font-size:2.9rem;font-weight:800;letter-spacing:-.02em;min-width:160px;text-align:center;font-variant-numeric:tabular-nums}
+.bw-read .u{font-size:1.1rem;color:var(--mut);font-weight:600}
+.bw-slider{width:100%;height:30px;accent-color:var(--acc);cursor:pointer}

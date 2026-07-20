@@ -30,30 +30,58 @@ export function loadStarterPlan() {
 
 /* ============================ body weight ============================ */
 function BwSheet({ required, onDone, close }) {
-  const bw = lastBW(S())
-  const [v, setV] = useState(bw ? String(bw.w) : '')
-  const ref = useRef(null)
-  useEffect(() => { setTimeout(() => { ref.current?.focus(); ref.current?.select() }, 250) }, [])
+  const st = useStore(s => s.S)
+  const unit = st.unit
+  const bw = lastBW(st)
+  const start = bw ? bw.w : 70
+  const [v, setV] = useState(start)
+  const clamp = x => Math.max(20, Math.min(300, Math.round((x || 0) * 10) / 10))
+  const set = x => setV(clamp(x))                 // absolute (slider)
+  const step = d => setV(p => clamp(p + d))       // relative (buttons/chips) — safe for rapid taps
+  // fixed slider window around the starting value (buttons/quick chips can go beyond)
+  const lo = Math.max(30, Math.round(start - 20))
+  const hi = Math.min(250, Math.round(start + 20))
   const save = () => {
-    const n = parseFloat(v)
-    if (!n || n <= 0 || n > 400) { toast('Enter a valid weight'); return }
-    update(st => {
+    const n = clamp(v)
+    if (!n || n <= 0) { toast('Enter a valid weight'); return }
+    update(s => {
       const iso = todayISO()
-      const ex = st.bodyweight.find(b => b.d === iso)
-      if (ex) { ex.w = n; ex.t = Date.now() } else st.bodyweight.push({ d: iso, w: n, t: Date.now() })
-      st.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
+      const ex = s.bodyweight.find(b => b.d === iso)
+      if (ex) { ex.w = n; ex.t = Date.now() } else s.bodyweight.push({ d: iso, w: n, t: Date.now() })
+      s.bodyweight.sort((a, b) => (a.d < b.d ? -1 : 1))
     })
     close()
     if (onDone) onDone(n); else toast('Weight saved ✓')
   }
+  const recent = [...st.bodyweight].reverse().slice(0, 6)
+  const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
   return <>
     <h3>{required ? 'Quick check-in ⚖️' : 'Log body weight'}</h3>
-    <div className="muted small">{required ? 'Step on the scale — tracked before every workout so your curve stays honest.' : 'Today, ' + fmtDate(todayISO(), true)}</div>
-    <div className="bwin"><input ref={ref} type="number" inputMode="decimal" step="0.1" value={v} onChange={e => setV(e.target.value)} placeholder="0.0" /><span>{S().unit}</span></div>
+    <div className="muted small">{required ? 'Slide or tap to set your weight — tracked before every workout so your curve stays honest.' : 'Today, ' + fmtDate(todayISO(), true)}</div>
+    <div className="bwstep">
+      <button className="bw-pm" onClick={() => step(-0.1)} aria-label="minus">−</button>
+      <div className="bw-read">{fmtNum(v)}<span className="u"> {unit}</span></div>
+      <button className="bw-pm" onClick={() => step(0.1)} aria-label="plus">+</button>
+    </div>
+    <input className="bw-slider" type="range" min={lo} max={hi} step="0.1" value={Math.max(lo, Math.min(hi, v))} onChange={e => set(parseFloat(e.target.value))} />
+    <div className="row" style={{ justifyContent: 'center', gap: 8, margin: '8px 0 2px' }}>
+      {[-1, -0.5, 0.5, 1].map(d => <button key={d} className="chip" onClick={() => step(d)}>{d > 0 ? '+' + d : d}</button>)}
+    </div>
+    <div style={{ height: 10 }} />
     <button className="btn primary" onClick={save}>{required ? 'Save & start workout' : 'Save'}</button>
     {required && <>
       <div style={{ height: 8 }} /><button className="btn ghost dim" onClick={() => { close(); onDone && onDone(null) }}>Skip today</button>
       <div style={{ height: 2 }} /><button className="btn ghost dim" onClick={() => { close(); nav('/workout') }}>↺ Choose a different workout</button>
+    </>}
+    {!required && recent.length > 0 && <>
+      <h4 className="sec">Recent weigh-ins</h4>
+      <div className="list" style={{ gap: 0 }}>
+        {recent.map(b => <div key={b.d} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--bg2)' }}>
+          <span className="small muted">{fmtDate(b.d, true)}</span>
+          <span className="row" style={{ gap: 12 }}><b>{fmtNum(b.w)} {unit}</b>
+            <button className="iconbtn" style={{ width: 34, height: 30, fontSize: '.9rem' }} onClick={() => delEntry(b.d)} aria-label="delete">🗑</button></span>
+        </div>)}
+      </div>
     </>}
   </>
 }
