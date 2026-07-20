@@ -337,4 +337,13 @@ h4.sec{font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(-
 .bw-pm:active{background:var(--card2);transform:scale(.94)}
 .bw-read{font-size:2.9rem;font-weight:800;letter-spacing:-.02em;min-width:160px;text-align:center;font-variant-numeric:tabular-nums}
 .bw-read .u{font-size:1.1rem;color:var(--mut);font-weight:600}
-.bw-slider{width:100%;height:30px;accent-color:var(--acc);cursor:pointer}
+/* fully theme-colored range slider (no default white track), big grabbable thumb */
+.bw-slider{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;cursor:pointer;margin:4px 0}
+.bw-slider::-webkit-slider-runnable-track{height:9px;border-radius:99px;
+  background:var(--track,var(--bg2))}
+.bw-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;margin-top:-10px;
+  width:29px;height:29px;border-radius:50%;background:var(--acc);border:3px solid var(--bg);
+  box-shadow:0 2px 10px rgba(0,0,0,.45)}
+.bw-slider::-moz-range-track{height:9px;border-radius:99px;background:var(--bg2)}
+.bw-slider::-moz-range-progress{height:9px;border-radius:99px;background:var(--acc)}
+.bw-slider::-moz-range-thumb{width:26px;height:26px;border:3px solid var(--bg);border-radius:50%;background:var(--acc)}

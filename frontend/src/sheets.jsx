@@ -63,11 +63,10 @@ function BwSheet({ required, onDone, close }) {
       <div className="bw-read">{fmtNum(v)}<span className="u"> {unit}</span></div>
       <button className="bw-pm" onClick={() => step(0.1)} aria-label="plus">+</button>
     </div>
-    <input className="bw-slider" type="range" min={lo} max={hi} step="0.1" value={Math.max(lo, Math.min(hi, v))} onChange={e => set(parseFloat(e.target.value))} />
-    <div className="row" style={{ justifyContent: 'center', gap: 8, margin: '8px 0 2px' }}>
-      {[-1, -0.5, 0.5, 1].map(d => <button key={d} className="chip" onClick={() => step(d)}>{d > 0 ? '+' + d : d}</button>)}
-    </div>
-    <div style={{ height: 10 }} />
+    <input className="bw-slider" type="range" min={lo} max={hi} step="0.1"
+      value={Math.max(lo, Math.min(hi, v))} onChange={e => set(parseFloat(e.target.value))}
+      style={{ '--track': `linear-gradient(90deg, var(--acc) ${((Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * 100}%, var(--bg2) ${((Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * 100}%)` }} />
+    <div style={{ height: 14 }} />
     <button className="btn primary" onClick={save}>{required ? 'Save & start workout' : 'Save'}</button>
     {required && <>
       <div style={{ height: 8 }} /><button className="btn ghost dim" onClick={() => { close(); onDone && onDone(null) }}>Skip today</button>
