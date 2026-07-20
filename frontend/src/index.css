@@ -27,7 +27,9 @@ button,.chip,.tile,.item,.wday,.cal-d,.ck,.swatch,.emoji-cell,.hm-c,#tabbar,.ste
 @keyframes viewfade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 #app.vfade{animation:viewfade .18s ease}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
-html{font-size:16px}
+/* html carries the theme background too, so the iOS scroll-lock (position:fixed on body)
+   can never expose a grey strip below the app when a modal opens */
+html{font-size:16px;background:var(--bg);overscroll-behavior:none}
 body{
   background:var(--bg); color:var(--txt);
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,sans-serif;
