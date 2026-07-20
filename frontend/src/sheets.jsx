@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { EXDB, EXIDX, BODYPARTS } from './lib/exercises.js'
+import { EXDB, EXIDX, BODYPARTS, isCardio } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, todayISO, uid, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf } from './lib/history.js'
+import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig } from './lib/history.js'
 import { beep, vibrate } from './lib/sound.js'
 import { nav } from './lib/nav.js'
 import Media, { Thumb } from './components/Media.jsx'
@@ -104,7 +104,7 @@ function ExerciseDetail({ ex }) {
       <span className="tag">🛠 {ex.eq}</span>
       {(ex.sm || []).slice(0, 3).map((s, i) => <span key={i} className="tag">{s}</span>)}
     </div>
-    {best > 0 && <div className="small" style={{ marginBottom: 6 }}>🏆 Best: <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · last ${fmtDate(last.d)}: ${last.sets.map(s => fmtNum(s.w) + '×' + s.r).join(', ')}` : ''}</div>}
+    {best > 0 && <div className="small" style={{ marginBottom: 6 }}>🏆 Best: <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · last ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s)).join(', ')}` : ''}</div>}
     <button className="btn primary" style={{ margin: '10px 0 4px' }} onClick={() => addToRoutineSheet(ex)}>＋ Add to my plan</button>
     {ex.st && ex.st.length > 0 && <><h4 className="sec">How to</h4><ol className="steps-list">{ex.st.map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
@@ -188,19 +188,32 @@ export const exercisePicker = onPick => ui().openSheet(close => <ExercisePicker 
 /* ============================ exercise config ============================ */
 function ExConfig({ ex, existing, onSave, onDelete, close }) {
   const st = useStore(s => s.S)
-  const [c, setC] = useState(existing || { sets: 3, reps: 10, weight: 0 })
+  const cardio = isCardio(ex.id)
+  const [c, setC] = useState(existing || defaultConfig(ex.id))
+  const save = () => {
+    close()
+    if (cardio) onSave({ sets: Math.max(1, Math.round(c.sets) || 1), min: Math.max(1, Math.round(c.min) || 20), speed: Math.max(0, c.speed || 8) })
+    else onSave({ sets: Math.max(1, Math.round(c.sets) || 3), reps: Math.max(1, Math.round(c.reps) || 10), weight: Math.max(0, c.weight || 0) })
+  }
   return <>
     <h3 className="capitalize">{ex.n}</h3>
     <Media ex={ex} />
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '10px 0 14px' }}>
+      {cardio && <span className="tag acc">🏃 Cardio</span>}
       <span className="tag">{ex.tg || ex.bp}</span><span className="tag">{ex.eq}</span>
     </div>
     <div className="row" style={{ justifyContent: 'space-around', marginBottom: 18 }}>
-      <Stepper label="Sets" value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />
-      <Stepper label="Reps" value={c.reps} step={1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
-      <Stepper label={'Weight (' + st.unit + ')'} value={c.weight} step={2.5} onChange={v => setC(x => ({ ...x, weight: v }))} />
+      {cardio ? <>
+        <Stepper label="Intervals" value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />
+        <Stepper label="Minutes" value={c.min} step={1} decimal={false} onChange={v => setC(x => ({ ...x, min: v }))} />
+        <Stepper label="Speed (km/h)" value={c.speed} step={0.5} onChange={v => setC(x => ({ ...x, speed: v }))} />
+      </> : <>
+        <Stepper label="Sets" value={c.sets} step={1} decimal={false} onChange={v => setC(x => ({ ...x, sets: v }))} />
+        <Stepper label="Reps" value={c.reps} step={1} decimal={false} onChange={v => setC(x => ({ ...x, reps: v }))} />
+        <Stepper label={'Weight (' + st.unit + ')'} value={c.weight} step={2.5} onChange={v => setC(x => ({ ...x, weight: v }))} />
+      </>}
     </div>
-    <button className="btn primary" onClick={() => { close(); onSave({ sets: Math.max(1, Math.round(c.sets) || 3), reps: Math.max(1, Math.round(c.reps) || 10), weight: Math.max(0, c.weight || 0) }) }}>{existing ? 'Save' : 'Add to routine'}</button>
+    <button className="btn primary" onClick={save}>{existing ? 'Save' : 'Add to routine'}</button>
     {onDelete && <><div style={{ height: 8 }} /><button className="btn danger" onClick={() => { close(); onDelete() }}>Remove exercise</button></>}
   </>
 }
@@ -267,7 +280,7 @@ function WorkoutDetail({ w, close }) {
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
         {ex && <Thumb ex={ex} />}
         <div className="grow"><div className="tt capitalize" style={{ fontWeight: 700 }}>{ex ? ex.n : e.id} {w.prs && w.prs.includes(e.id) && <span className="pr">🏆 PR</span>}</div>
-          <div className="ss">{e.sets.filter(s => s.done).map(s => fmtNum(s.w) + '×' + s.r).join('  ·  ') || 'no sets'}</div></div>
+          <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s)).join('  ·  ') || 'no sets'}</div></div>
       </div>
     })}
     <button className="btn danger" onClick={() => { if (confirm('Delete this workout from history?')) { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast('Workout deleted') } }}>Delete workout</button>

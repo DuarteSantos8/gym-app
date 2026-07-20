@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useStore } from '../store/useStore.js'
-import { EXIDX } from '../lib/exercises.js'
+import { EXIDX, isCardio } from '../lib/exercises.js'
 import { fmtNum, uid } from '../lib/format.js'
 import { supersetUnits } from '../lib/history.js'
 import { Thumb } from '../components/Media.jsx'
@@ -56,7 +56,7 @@ export default function RoutineEdit() {
           exConfigSheet(ex, e, cfg => edit(x => { Object.assign(x[i], cfg) }), () => edit(x => { x.splice(i, 1); cleanupSg(x) }))
         }}>
           <Thumb ex={ex} />
-          <div className="grow"><div className="tt">{ex.n}</div><div className="ss">{e.sets} × {e.reps}{e.weight ? ' · ' + fmtNum(e.weight) + ' ' + S.unit : ''}</div></div>
+          <div className="grow"><div className="tt">{ex.n}</div><div className="ss">{isCardio(e.id) ? `${e.sets} × ${e.min || 20} min @ ${fmtNum(e.speed || 8)} km/h` : `${e.sets} × ${e.reps}${e.weight ? ' · ' + fmtNum(e.weight) + ' ' + S.unit : ''}`}</div></div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 'none', alignItems: 'center' }}>
             {i > 0 && <button className={'iconbtn' + (linkedPrev ? ' on-ss' : '')} title="Superset with exercise above" style={{ width: 34, height: 28, fontSize: '.85rem' }} onClick={ev => { ev.stopPropagation(); toggleLink(i) }}>🔗</button>}
             <div style={{ display: 'flex', gap: 2 }}>

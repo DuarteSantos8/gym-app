@@ -1,5 +1,16 @@
 // Pure helpers over the state object S (ported 1:1 from the vanilla app).
-import { todayISO, isoOf, weekKey } from './format.js'
+import { todayISO, isoOf, weekKey, fmtNum } from './format.js'
+import { isCardio } from './exercises.js'
+
+// One-line summary of a logged set — cardio shows time/speed, strength shows weight×reps.
+export function setLabel(id, s) {
+  if (isCardio(id)) return `${s.min || 0} min @ ${fmtNum(s.speed || 0)} km/h`
+  return `${fmtNum(s.w || 0)}×${s.r || 0}`
+}
+// Default config for a freshly added exercise.
+export function defaultConfig(id) {
+  return isCardio(id) ? { sets: 1, min: 20, speed: 8 } : { sets: 3, reps: 10, weight: 0 }
+}
 
 export function lastEntryFor(S, exId) {
   for (let i = S.workouts.length - 1; i >= 0; i--) {
@@ -31,9 +42,17 @@ export function effectiveRoutine(S, iso) {
 }
 export function buildSets(S, cfg) {
   const last = lastEntryFor(S, cfg.id)
-  const conf = S.exWeights[cfg.id]
+  const n = Math.max(1, cfg.sets || 1)
   const sets = []
-  for (let i = 0; i < cfg.sets; i++) {
+  if (isCardio(cfg.id)) {
+    for (let i = 0; i < n; i++) {
+      const prev = last ? (last.sets[i] || last.sets[last.sets.length - 1]) : null
+      sets.push({ min: prev ? prev.min : (cfg.min || 20), speed: prev ? prev.speed : (cfg.speed || 8), done: false })
+    }
+    return sets
+  }
+  const conf = S.exWeights[cfg.id]
+  for (let i = 0; i < n; i++) {
     const prev = last ? (last.sets[i] || last.sets[last.sets.length - 1]) : null
     const w = conf && conf.w > 0 ? conf.w : (prev ? prev.w : cfg.weight)
     sets.push({ w, r: prev ? prev.r : cfg.reps, done: false })

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { EXIDX } from '../lib/exercises.js'
-import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, setsDoneActive, supersetUnits, unitOf } from '../lib/history.js'
+import { EXIDX, isCardio } from '../lib/exercises.js'
+import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, setsDoneActive, supersetUnits, unitOf, setLabel } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, DAYN } from '../lib/format.js'
 import { beep, vibrate } from '../lib/sound.js'
 import Media from '../components/Media.jsx'
@@ -37,15 +37,36 @@ function StartChooser() {
   </div>
 }
 
-/* ---------- one exercise block (used standalone or inside a superset card) ---------- */
-function ExerciseBlock({ entryIdx, compact, onToggle, onWeight, onReps, onAddSet }) {
+/* ---------- elapsed clock (isolated so the workout tree doesn't re-render every second) ---------- */
+function Elapsed({ start }) {
+  const [t, setT] = useState('0:00')
+  useEffect(() => {
+    const tick = () => { const s = Math.floor((Date.now() - start) / 1000); setT(Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')) }
+    tick(); const iv = setInterval(tick, 1000); return () => clearInterval(iv)
+  }, [start])
+  return <span>{t}</span>
+}
+
+/* ---------- one exercise block (strength: weight×reps · cardio: duration+speed) ---------- */
+function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddSet }) {
   const S = useStore(s => s.S)
   const entry = S.active.entries[entryIdx]
   const ex = EXIDX[entry.id]
+  const cardio = isCardio(ex)
   const last = lastEntryFor(S, entry.id)
-  const best = bestWeightFor(S, entry.id)
-  const hint = last && last.sets.length >= (entry.target.sets || 1) && last.sets.every(s => s.r >= entry.target.reps) && last.sets[0].w > 0
+  const best = cardio ? 0 : bestWeightFor(S, entry.id)
+  const hint = !cardio && last && last.sets.length >= (entry.target.sets || 1) && last.sets.every(s => s.r >= entry.target.reps) && last.sets[0].w > 0
     ? Math.max(...last.sets.map(s => s.w)) + 2.5 : null
+  const col1 = cardio ? { f: 'min', step: 1, dec: false, hd: 'Duration (min)' } : { f: 'w', step: 2.5, dec: true, hd: `Weight (${S.unit})` }
+  const col2 = cardio ? { f: 'speed', step: 0.5, dec: true, hd: 'Speed (km/h)' } : { f: 'r', step: 1, dec: false, hd: 'Reps' }
+  const cell = (s, i, col, cls) => (
+    <div className={'step ' + cls}>
+      <button onClick={() => onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) - col.step) * 100) / 100))}>−</button>
+      <input type="number" inputMode={col.dec ? 'decimal' : 'numeric'} value={s[col.f] ?? ''} onFocus={e => e.target.select()}
+        onChange={e => onField(i, col.f, e.target.value === '' ? 0 : Math.max(0, (col.dec ? parseFloat(e.target.value) : Math.round(parseFloat(e.target.value))) || 0))} />
+      <button onClick={() => onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) + col.step) * 100) / 100))}>+</button>
+    </div>
+  )
   return <>
     <Media ex={ex} key={entry.id} compact={compact} />
     <div className="row between" style={{ marginBottom: 6 }}>
@@ -53,25 +74,18 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onWeight, onReps, onAddSet
       <button className="iconbtn" onClick={() => exerciseDetailSheet(ex)}>ℹ️</button>
     </div>
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+      {cardio && <span className="tag acc">🏃 Cardio</span>}
       <span className="tag">{ex.tg || ex.bp}</span><span className="tag">{ex.eq}</span>
       {best > 0 && <span className="tag">Best: {fmtNum(best)} {S.unit}</span>}
     </div>
-    {last && <div className="small dim" style={{ marginBottom: 4 }}>Last time ({fmtDate(last.d)}): {last.sets.map(s => fmtNum(s.w) + '×' + s.r).join(', ')}</div>}
-    {hint && <button className="tag acc" style={{ border: 'none' }} onClick={() => onWeight(-1, hint)}>💡 Last time you hit all reps — try {fmtNum(hint)} {S.unit}</button>}
+    {last && <div className="small dim" style={{ marginBottom: 4 }}>Last time ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s)).join(', ')}</div>}
+    {hint && <button className="tag acc" style={{ border: 'none' }} onClick={() => { onBumpAll('w', hint); useUI.getState().toast('Weights bumped to ' + fmtNum(hint) + ' ' + S.unit + ' 💪') }}>💡 Last time you hit all reps — try {fmtNum(hint)} {S.unit}</button>}
     <div className="card" style={{ marginTop: 10, marginBottom: 0 }}>
-      <div className="sethead"><span className="n-sp" /><span className="w-sp">Weight ({S.unit})</span><span className="r-sp">Reps</span><span className="ck-sp" /></div>
+      <div className="sethead"><span className="n-sp" /><span className="w-sp">{col1.hd}</span><span className="r-sp">{col2.hd}</span><span className="ck-sp" /></div>
       {entry.sets.map((s, i) => <div key={i} className={'setrow' + (s.done ? ' done' : '')}>
         <div className="n">{i + 1}</div>
-        <div className="step w">
-          <button onClick={() => onWeight(i, Math.max(0, (s.w || 0) - 2.5))}>−</button>
-          <input type="number" inputMode="decimal" value={s.w} onFocus={e => e.target.select()} onChange={e => onWeight(i, e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0))} />
-          <button onClick={() => onWeight(i, Math.max(0, (s.w || 0) + 2.5))}>+</button>
-        </div>
-        <div className="step r">
-          <button onClick={() => onReps(i, Math.max(0, (s.r || 0) - 1))}>−</button>
-          <input type="number" inputMode="numeric" value={s.r} onFocus={e => e.target.select()} onChange={e => onReps(i, e.target.value === '' ? 0 : Math.max(0, Math.round(parseFloat(e.target.value) || 0)))} />
-          <button onClick={() => onReps(i, Math.max(0, (s.r || 0) + 1))}>+</button>
-        </div>
+        {cell(s, i, col1, 'w')}
+        {cell(s, i, col2, 'r')}
         <button className={'ck' + (s.done ? ' on' : '')} onClick={() => onToggle(i)}><svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11" /></svg></button>
       </div>)}
       <div style={{ height: 8 }} />
@@ -87,13 +101,6 @@ function ActiveWorkout() {
   const update = useStore(s => s.update)
   const { startRest, stopRest } = useUI()
   const A = S.active
-  const [elapsed, setElapsed] = useState('0:00')
-
-  useEffect(() => {
-    const tick = () => { const sec = Math.floor((Date.now() - A.start) / 1000); setElapsed(Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0')) }
-    tick(); const iv = setInterval(tick, 1000); return () => clearInterval(iv)
-  }, [A.start])
-
   const units = supersetUnits(A.entries)
   const cur = Math.min(A.cur, Math.max(0, A.entries.length - 1))
   const unit = A.entries.length ? unitOf(units, cur) : []
@@ -104,12 +111,17 @@ function ActiveWorkout() {
   const done = setsDoneActive(A)
 
   const mutEntry = (idx, fn) => update(s => { fn(s.active.entries[idx]) }, true)
-  const setWeight = (idx, i, v) => { if (i === -1) mutEntry(idx, e => e.sets.forEach(s => { if (!s.done) s.w = v })); else mutEntry(idx, e => { e.sets[i].w = v }) }
-  const setReps = (idx, i, v) => mutEntry(idx, e => { e.sets[i].r = v })
-  const addSet = idx => mutEntry(idx, e => { const l = e.sets[e.sets.length - 1]; e.sets.push({ w: l ? l.w : 0, r: l ? l.r : e.target.reps, done: false }) })
+  const setField = (idx, i, field, v) => mutEntry(idx, e => { e.sets[i][field] = v })
+  const bumpAll = (idx, field, v) => mutEntry(idx, e => e.sets.forEach(s => { if (!s.done) s[field] = v }))
+  const addSet = idx => mutEntry(idx, e => {
+    const l = e.sets[e.sets.length - 1]
+    if (isCardio(e.id)) e.sets.push({ min: l ? l.min : (e.target.min || 20), speed: l ? l.speed : (e.target.speed || 8), done: false })
+    else e.sets.push({ w: l ? l.w : 0, r: l ? l.r : e.target.reps, done: false })
+  })
 
   const toggle = (idx, i) => {
-    let askTop = false
+    const cardioEntry = isCardio(A.entries[idx].id)
+    let askTop = false, exJustDone = false
     mutEntry(idx, e => {
       e.sets[i].done = !e.sets[i].done
       if (e.sets[i].done) {
@@ -118,16 +130,17 @@ function ActiveWorkout() {
         const unitDone = unit.every(ui => (ui === idx ? e : A.entries[ui]).sets.every(x => x.done))
         if (isLastExInUnit && !unitDone) startRest(S.restSec)
         else if (unitDone) stopRest()
-        if (e.sets.every(x => x.done) && !e.asked) { e.asked = true; askTop = true }
+        if (e.sets.every(x => x.done)) { exJustDone = true; if (!cardioEntry && !e.asked) { e.asked = true; askTop = true } }
       }
     })
     if (askTop) topWeightSheet(idx)
+    else if (exJustDone && cardioEntry) useUI.getState().toast('Cardio logged 🏃')
   }
 
   return <div className="narrow">
     <div className="hdr">
       <button className="iconbtn" onClick={() => { if (confirm('Discard this workout? Logged sets will be lost.')) { update(s => { s.active = null }); stopRest(); nav('/home') } }}>✕</button>
-      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 800 }}>{A.name}</div><div className="sub">{elapsed} · {done}/{total} sets</div></div>
+      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 800 }}>{A.name}</div><div className="sub"><Elapsed start={A.start} /> · {done}/{total} sets</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} onClick={finishWorkout}>✓</button>
     </div>
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
@@ -140,11 +153,11 @@ function ActiveWorkout() {
           {unit.map((idx, k) => <div key={idx} className="ss-ex">
             {k > 0 && <div className="ss-amp">+</div>}
             <ExerciseBlock entryIdx={idx} compact
-              onToggle={i => toggle(idx, i)} onWeight={(i, v) => setWeight(idx, i, v)} onReps={(i, v) => setReps(idx, i, v)} onAddSet={() => addSet(idx)} />
+              onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onBumpAll={(f, v) => bumpAll(idx, f, v)} onAddSet={() => addSet(idx)} />
           </div>)}
         </div>
       ) : (
-        <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onWeight={(i, v) => setWeight(cur, i, v)} onReps={(i, v) => setReps(cur, i, v)} onAddSet={() => addSet(cur)} />
+        <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onBumpAll={(f, v) => bumpAll(cur, f, v)} onAddSet={() => addSet(cur)} />
       )}
     </> : <div className="empty"><div className="ico">🎯</div>Freestyle workout — add your first exercise.</div>}
 

@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
-import { EXIDX } from '../lib/exercises.js'
-import { bestWeightFor, lastBW, streakWeeks } from '../lib/history.js'
-import { fmtNum, fmtDate, todayISO } from '../lib/format.js'
+import { EXIDX, isCardio } from '../lib/exercises.js'
+import { bestWeightFor, lastBW, streakWeeks, setLabel } from '../lib/history.js'
+import { fmtNum, fmtDate, fmtVol, todayISO } from '../lib/format.js'
 import { bwSheet, goalSheet, calendarSheet, workoutDetailSheet, WorkoutRow, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 import Heatmap from '../components/Heatmap.jsx'
 
+// Stats = the analytics hub: all charts, progress and history live here.
 export default function Stats() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
@@ -23,11 +24,14 @@ export default function Stats() {
 
   const exHist = [...new Set(S.workouts.flatMap(w => w.entries.map(e => e.id)))].filter(id => EXIDX[id]).sort((a, b) => EXIDX[a].n < EXIDX[b].n ? -1 : 1)
   const curEx = exId && exHist.includes(exId) ? exId : exHist[0] || null
-  let exPts = [], exList = []
+  const curCardio = curEx && isCardio(curEx)
+  const metric = s => curCardio ? (s.speed || 0) : (s.w || 0)
+  const exUnit = curCardio ? 'km/h' : S.unit
+  let exPts = [], exList = [], exBest = 0
   if (curEx) {
     S.workouts.forEach(w => {
       const en = w.entries.find(e => e.id === curEx)
-      if (en) { const mx = Math.max(0, ...en.sets.filter(s => s.done).map(s => s.w), en.topW || 0); if (mx > 0) exPts.push({ t: w.start, y: mx, d: w.d, sets: en.sets.filter(s => s.done) }) }
+      if (en) { const mx = Math.max(0, ...en.sets.filter(s => s.done).map(metric), curCardio ? 0 : (en.topW || 0)); if (mx > 0) { exPts.push({ t: w.start, y: mx, d: w.d, sets: en.sets.filter(s => s.done) }); if (mx > exBest) exBest = mx } }
     })
     exList = exPts.slice(-5).reverse()
   }
@@ -67,22 +71,22 @@ export default function Stats() {
         <h2>Exercise progress</h2>
         {exHist.length ? <>
           <select className="input capitalize" style={{ marginBottom: 10 }} value={curEx} onChange={e => setExId(e.target.value)}>
-            {exHist.map(id => <option key={id} value={id}>{EXIDX[id].n}</option>)}
+            {exHist.map(id => <option key={id} value={id}>{EXIDX[id].n}{isCardio(id) ? ' 🏃' : ''}</option>)}
           </select>
-          <div className="chart"><LineChart points={exPts.map(p => ({ t: p.t, y: p.y, d: p.d }))} h={150} unit={S.unit} color="var(--blue)" /></div>
+          <div className="chart"><LineChart points={exPts.map(p => ({ t: p.t, y: p.y, d: p.d }))} h={150} unit={exUnit} color="var(--blue)" /></div>
           <div style={{ marginTop: 8 }}>{exList.map((p, i) => <div key={i} className="row between small" style={{ padding: '6px 0', borderBottom: '1px solid var(--bg2)' }}>
-            <span className="muted">{fmtDate(p.d, true)}</span><span>{p.sets.map(s => fmtNum(s.w) + '×' + s.r).join('  ')}</span></div>)}</div>
-          <div className="small dim" style={{ marginTop: 8 }}>Best set weight per workout · Best ever: <b className="accent">{fmtNum(bestWeightFor(S, curEx))} {S.unit}</b></div>
-        </> : <div className="muted small">Finish your first workout to see strength curves here. 📈</div>}
+            <span className="muted">{fmtDate(p.d, true)}</span><span>{p.sets.map(s => setLabel(curEx, s)).join('  ')}</span></div>)}</div>
+          <div className="small dim" style={{ marginTop: 8 }}>{curCardio ? 'Top speed per workout' : 'Best set weight per workout'} · Best: <b className="accent">{fmtNum(exBest)} {exUnit}</b></div>
+        </> : <div className="muted small">Finish your first workout to see progress curves here. 📈</div>}
       </div>
     </div>
 
     {S.workouts.length > 0 && <>
       <div className="row between" style={{ marginBottom: 10 }}>
-        <h4 className="sec" style={{ margin: 0 }}>History</h4>
+        <h4 className="sec" style={{ margin: 0 }}>Recent workouts</h4>
         <button className="btn sm ghost accent" onClick={() => nav('/history')}>All {S.workouts.length} ›</button>
       </div>
-      <div className="list">{[...S.workouts].reverse().slice(0, 5).map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
+      <div className="list">{[...S.workouts].reverse().slice(0, 6).map(w => <WorkoutRow key={w.id} w={w} onClick={() => workoutDetailSheet(w)} />)}</div>
     </>}
   </>
 }
