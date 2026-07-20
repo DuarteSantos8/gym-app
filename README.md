@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/banner.svg" alt="openGym" width="100%">
+<img src="assets/banner.png" alt="openGym" width="720">
 
 <br>
 
