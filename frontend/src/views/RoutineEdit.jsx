@@ -5,7 +5,7 @@ import { EXIDX, isCardio } from '../lib/exercises.js'
 import { fmtNum, uid } from '../lib/format.js'
 import { supersetUnits } from '../lib/history.js'
 import { Thumb } from '../components/Media.jsx'
-import { emojiPicker, exercisePicker, exConfigSheet } from '../sheets.jsx'
+import { emojiPicker, exercisePicker, exConfigSheet, confirmSheet } from '../sheets.jsx'
 
 // drop superset ids that no longer have an adjacent partner (after unlink/reorder)
 function cleanupSg(ex) {
@@ -71,14 +71,16 @@ export default function RoutineEdit() {
     <div className="small dim" style={{ margin: '10px 2px' }}>Tip: tap 🔗 on an exercise to superset it with the one above — you’ll do them back-to-back.</div>
     <button className="btn primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) })))}>+ Add exercise</button>
     <div style={{ height: 10 }} />
-    <button className="btn danger" onClick={() => {
-      if (!confirm('Delete "' + r.name + '"?')) return
-      update(s => {
-        s.routines = s.routines.filter(x => x.id !== id)
-        Object.keys(s.week).forEach(k => { if (s.week[k] === id) delete s.week[k] })
-        Object.keys(s.dayPlan).forEach(k => { if (s.dayPlan[k] === id) delete s.dayPlan[k] })
-      })
-      nav('/plan')
-    }}>Delete routine</button>
+    <button className="btn danger" onClick={() => confirmSheet({
+      title: 'Delete routine?', message: `“${r.name}” and its exercises will be removed.`, confirmText: 'Delete', danger: true,
+      onConfirm: () => {
+        update(s => {
+          s.routines = s.routines.filter(x => x.id !== id)
+          Object.keys(s.week).forEach(k => { if (s.week[k] === id) delete s.week[k] })
+          Object.keys(s.dayPlan).forEach(k => { if (s.dayPlan[k] === id) delete s.dayPlan[k] })
+        })
+        nav('/plan')
+      }
+    })}>Delete routine</button>
   </div>
 }

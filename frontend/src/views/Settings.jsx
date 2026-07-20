@@ -4,7 +4,7 @@ import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { ACCENTS, todayISO } from '../lib/format.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
-import { loadStarterPlan } from '../sheets.jsx'
+import { loadStarterPlan, confirmSheet } from '../sheets.jsx'
 
 export default function Settings() {
   const nav = useNavigate()
@@ -26,8 +26,7 @@ export default function Settings() {
       try {
         const data = JSON.parse(rd.result)
         if (!data.workouts || !data.routines) throw new Error('not an openGym backup')
-        if (!confirm('Replace all current data with this backup?')) return
-        replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data), true); toast('Backup imported ✓')
+        confirmSheet({ title: 'Import backup?', message: 'This replaces all current data with the backup file.', confirmText: 'Import', danger: true, onConfirm: () => { replaceState(Object.assign(JSON.parse(JSON.stringify(DEF)), data), true); toast('Backup imported ✓') } })
       } catch (e) { toast('Import failed: ' + e.message) }
     }
     rd.readAsText(f)
@@ -45,7 +44,7 @@ export default function Settings() {
       <h2>Account</h2>
       {user ? <div className="row between">
         <div><b>{user.name}</b><div className="small muted">Signed in with passkey — data syncs to this profile.</div></div>
-        <button className="btn sm danger" onClick={() => { if (confirm('Sign out? Local data is synced to your profile first, then cleared from this device.')) { signOut(); nav('/home') } }}>Sign out</button>
+        <button className="btn sm danger" onClick={() => confirmSheet({ title: 'Sign out?', message: 'Your data is synced to your profile first, then cleared from this device.', confirmText: 'Sign out', danger: true, onConfirm: () => { signOut(); nav('/home') } })}>Sign out</button>
       </div> : <>
         <div className="small muted" style={{ marginBottom: 10 }}>Guest mode — data lives only in this browser. Create a passkey profile to keep it safe and separate per person.</div>
         {webauthnOK() ? <>
@@ -89,7 +88,7 @@ export default function Settings() {
       <div style={{ height: 8 }} /><button className="btn" onClick={() => fileRef.current.click()}>⬆️ Import backup</button>
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={doImport} />
       <div style={{ height: 8 }} /><button className="btn" onClick={loadStarterPlan}>Load starter plan (PPL)</button>
-      <div style={{ height: 8 }} /><button className="btn danger" onClick={() => { if (confirm('Delete ALL data (plan, workouts, body weight)?') && confirm('Really sure? This cannot be undone.')) { replaceState(JSON.parse(JSON.stringify(DEF)), true); nav('/home'); toast('All data reset') } }}>Reset everything</button>
+      <div style={{ height: 8 }} /><button className="btn danger" onClick={() => confirmSheet({ title: 'Reset everything?', message: 'Deletes your plan, workouts and body weight on this device. This cannot be undone.', confirmText: 'Delete everything', danger: true, onConfirm: () => { replaceState(JSON.parse(JSON.stringify(DEF)), true); nav('/home'); toast('All data reset') } })}>Reset everything</button>
     </div>
 
     <div className="card"><h2>Tip</h2>

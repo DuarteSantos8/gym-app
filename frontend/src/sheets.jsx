@@ -15,6 +15,21 @@ const ui = () => useUI.getState()
 const toast = m => ui().toast(m)
 const snd = () => S().sound
 
+/* ============================ custom confirm dialog ============================ */
+function ConfirmDialog({ title, message, confirmText, cancelText, danger, onConfirm, close }) {
+  return <div style={{ textAlign: 'center', padding: '4px 0' }}>
+    {title && <h3 style={{ marginBottom: 8 }}>{title}</h3>}
+    <div className="muted" style={{ marginBottom: 18, lineHeight: 1.5 }}>{message}</div>
+    <button className={'btn ' + (danger ? 'danger' : 'primary')} onClick={() => { close(); onConfirm && onConfirm() }}>{confirmText || 'Confirm'}</button>
+    <div style={{ height: 8 }} />
+    <button className="btn ghost dim" onClick={close}>{cancelText || 'Cancel'}</button>
+  </div>
+}
+// Themed replacement for window.confirm — callback-based (no blocking).
+export function confirmSheet(opts) {
+  ui().openSheet(close => <ConfirmDialog {...opts} close={close} />, { kind: 'center' })
+}
+
 /* ============================ starter plan ============================ */
 export function loadStarterPlan() {
   const mk = (name, emoji, list) => ({ id: uid(), name, emoji, ex: list.map(([id, sets, reps]) => ({ id, sets, reps, weight: 0 })) })
@@ -66,7 +81,7 @@ function BwSheet({ required, onDone, close }) {
     close()
     if (onDone) onDone(n); else toast('Weight saved ✓')
   }
-  const recent = [...st.bodyweight].reverse().slice(0, 6)
+  const recent = [...st.bodyweight].reverse().slice(0, 3)
   const delEntry = d => update(s => { s.bodyweight = s.bodyweight.filter(b => b.d !== d) })
   return <>
     <h3>{required ? 'Quick check-in ⚖️' : 'Log body weight'}</h3>
@@ -315,7 +330,7 @@ function WorkoutDetail({ w, close }) {
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s)).join('  ·  ') || 'no sets'}</div></div>
       </div>
     })}
-    <button className="btn danger" onClick={() => { if (confirm('Delete this workout from history?')) { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast('Workout deleted') } }}>Delete workout</button>
+    <button className="btn danger" onClick={() => confirmSheet({ title: 'Delete workout?', message: 'This removes it from your history for good.', confirmText: 'Delete', danger: true, onConfirm: () => { update(s => { s.workouts = s.workouts.filter(x => x.id !== w.id) }); close(); toast('Workout deleted') } })}>Delete workout</button>
   </>
 }
 export const workoutDetailSheet = w => ui().openSheet(close => <WorkoutDetail w={w} close={close} />)
@@ -396,9 +411,7 @@ function TopWeight({ entryIdx, close }) {
   const ex = EXIDX[entry.id]
   const maxSet = Math.max(0, ...entry.sets.filter(s => s.done).map(s => s.w || 0))
   const prevBest = Math.max((st.exWeights[entry.id] || {}).w || 0, bestWeightFor(st, entry.id))
-  const [v, setV] = useState(String(Math.max(maxSet, prevBest) || entry.target.weight || 0))
-  const ref = useRef(null)
-  useEffect(() => { setTimeout(() => { ref.current?.focus(); ref.current?.select() }, 250) }, [])
+  const [v, setV] = useState(Math.max(maxSet, prevBest) || entry.target.weight || 0)
 
   const units = supersetUnits(A.entries)
   const unit = unitOf(units, entryIdx)
@@ -407,7 +420,7 @@ function TopWeight({ entryIdx, close }) {
   const isLastUnit = unitIdx === units.length - 1
 
   const commit = advance => {
-    const n = parseFloat(v)
+    const n = Math.round((v || 0) * 10) / 10
     if (!isFinite(n) || n < 0) { toast('Enter a valid weight'); return }
     update(s => {
       s.active.entries[entryIdx].topW = n
@@ -423,7 +436,8 @@ function TopWeight({ entryIdx, close }) {
   return <>
     <h3 className="capitalize">✅ {ex.n} done</h3>
     <div className="muted small">Confirm the weight you worked with — your highest becomes the default next time.{!unitDone && unit.length > 1 ? ' Then finish the superset partner.' : ''}</div>
-    <div className="bwin"><input ref={ref} type="number" inputMode="decimal" step="0.5" value={v} onChange={e => setV(e.target.value)} /><span>{st.unit}</span></div>
+    <WeightInput value={v} setValue={setV} unit={st.unit} />
+    <div style={{ height: 10 }} />
     {prevBest > 0 ? <div className="small dim" style={{ textAlign: 'center', marginBottom: 12 }}>Previous best: {fmtNum(prevBest)} {st.unit}{maxSet > prevBest && <span style={{ color: 'var(--gold)' }}> — new record! 🏆</span>}</div> : <div style={{ height: 4 }} />}
     {unitDone ? <>
       <button className="btn primary" onClick={() => commit(true)}>{isLastUnit ? 'Save ✓' : 'Save & next exercise ›'}</button>
@@ -462,13 +476,18 @@ function FinishSummary({ w, prs, close }) {
   </div>
 }
 export function finishWorkout() {
-  const st = S()
-  const A = st.active
+  const A = S().active
   if (!A) return
   const done = setsDoneActive(A)
   const total = A.entries.reduce((n, e) => n + e.sets.length, 0)
-  if (!done && !confirm('No sets logged — finish anyway?')) return
-  if (done < total && done > 0 && !confirm('Some sets are unchecked. Finish workout?')) return
+  if (!done) { confirmSheet({ title: 'Nothing logged yet', message: 'You haven’t checked off any sets. Finish the workout anyway?', confirmText: 'Finish anyway', onConfirm: doFinishWorkout }); return }
+  if (done < total) { confirmSheet({ title: 'Finish early?', message: `${total - done} set${total - done === 1 ? '' : 's'} still unchecked. Finish the workout now?`, confirmText: 'Finish workout', onConfirm: doFinishWorkout }); return }
+  doFinishWorkout()
+}
+function doFinishWorkout() {
+  const st = S()
+  const A = st.active
+  if (!A) return
   const prs = []
   A.entries.forEach(e => {
     const mx = Math.max(0, ...e.sets.filter(s => s.done).map(s => s.w))

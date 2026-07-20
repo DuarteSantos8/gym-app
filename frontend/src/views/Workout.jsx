@@ -7,7 +7,7 @@ import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, setsDoneActiv
 import { fmtNum, fmtDate, todayISO, DAYN } from '../lib/format.js'
 import { beep, vibrate } from '../lib/sound.js'
 import Media from '../components/Media.jsx'
-import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet } from '../sheets.jsx'
+import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 
 /* ---------- start chooser (no active workout) ---------- */
 function StartChooser() {
@@ -144,7 +144,7 @@ function ActiveWorkout() {
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => { if (confirm('Discard this workout? Logged sets will be lost.')) { update(s => { s.active = null }); stopRest(); nav('/home') } }}>✕</button>
+      <button className="iconbtn" onClick={() => confirmSheet({ title: 'Discard workout?', message: 'The sets you logged in this session will be lost.', confirmText: 'Discard', danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}>✕</button>
       <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 800 }}>{A.name}</div><div className="sub"><Elapsed start={A.start} /> · {done}/{total} sets</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} onClick={finishWorkout}>✓</button>
     </div>
