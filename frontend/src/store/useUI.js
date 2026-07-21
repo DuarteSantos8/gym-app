@@ -5,6 +5,7 @@ import { useStore } from './useStore.js'
 
 let toastTm = null
 let timerInt = null
+let timerTick = null
 
 export const useUI = create((set, get) => ({
   sheets: [],          // { id, render:(close)=>JSX, kind:'sheet'|'center', locked }
@@ -28,11 +29,13 @@ export const useUI = create((set, get) => ({
 
   startRest(sec) {
     get().stopRest()
-    set({ timer: { left: sec, total: sec } })
-    timerInt = setInterval(() => {
+    const endsAt = Date.now() + sec * 1000
+    set({ timer: { left: sec, total: sec, endsAt } })
+    timerTick = () => {
       const t = get().timer
       if (!t) return
-      const left = t.left - 1
+      const left = Math.max(0, Math.round((t.endsAt - Date.now()) / 1000))
+      if (left === t.left) return
       const snd = useStore.getState().S.sound
       if (left <= 0) {
         beep(snd, 880, 0.15); beep(snd, 880, 0.15, 0.25); beep(snd, 1320, 0.4, 0.5)
@@ -40,8 +43,14 @@ export const useUI = create((set, get) => ({
       }
       if (left <= 3) beep(snd, 660, 0.1)
       set({ timer: { ...t, left } })
-    }, 1000)
+    }
+    timerInt = setInterval(timerTick, 1000)
+    document.addEventListener('visibilitychange', timerTick)
   },
-  addRest(sec) { const t = get().timer; if (t) set({ timer: { left: t.left + sec, total: t.total + sec } }) },
-  stopRest() { if (timerInt) clearInterval(timerInt); timerInt = null; set({ timer: null }) }
+  addRest(sec) { const t = get().timer; if (t) set({ timer: { ...t, left: t.left + sec, total: t.total + sec, endsAt: t.endsAt + sec * 1000 } }) },
+  stopRest() {
+    if (timerInt) clearInterval(timerInt); timerInt = null
+    if (timerTick) document.removeEventListener('visibilitychange', timerTick); timerTick = null
+    set({ timer: null })
+  }
 }))
