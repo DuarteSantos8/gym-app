@@ -8,6 +8,7 @@ import { fmtNum, fmtDate, todayISO, DAYN } from '../lib/format.js'
 import { beep, vibrate } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
 import Media from '../components/Media.jsx'
+import NumField from '../components/NumField.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 
 /* ---------- start chooser (no active workout) ---------- */
@@ -63,8 +64,7 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddS
   const cell = (s, i, col, cls) => (
     <div className={'step ' + cls}>
       <button onClick={() => onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) - col.step) * 100) / 100))}>−</button>
-      <input type="number" inputMode={col.dec ? 'decimal' : 'numeric'} value={s[col.f] ?? ''} onFocus={e => e.target.select()}
-        onChange={e => onField(i, col.f, e.target.value === '' ? 0 : Math.max(0, (col.dec ? parseFloat(e.target.value) : Math.round(parseFloat(e.target.value))) || 0))} />
+      <NumField decimal={col.dec} value={s[col.f] ?? ''} onChange={v => onField(i, col.f, v)} />
       <button onClick={() => onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) + col.step) * 100) / 100))}>+</button>
     </div>
   )
