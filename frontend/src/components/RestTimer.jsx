@@ -1,4 +1,5 @@
 import { useUI } from '../store/useUI.js'
+import { t } from '../lib/i18n.js'
 export default function RestTimer() {
   const timer = useUI(s => s.timer)
   const { addRest, stopRest } = useUI()
@@ -10,7 +11,7 @@ export default function RestTimer() {
       <div className="t">{m}:{s}</div>
       <div className="bar"><i style={{ width: pct + '%' }} /></div>
       <button className="btn sm" onClick={() => addRest(15)}>+15s</button>
-      <button className="btn sm primary" onClick={stopRest}>Skip</button>
+      <button className="btn sm primary" onClick={stopRest}>{t('Skip')}</button>
     </div>
   )
 }

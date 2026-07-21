@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine, effectiveRoutineId, streakWeeks, lastBW, setsDoneActive } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, isoOf, weekKey, DAYS } from '../lib/format.js'
+import { t, dateLocale } from '../lib/i18n.js'
 import { bwSheet, goalSheet, dayOverrideSheet, calendarSheet, startFlow, loadStarterPlan, bwDeltaColor } from '../sheets.jsx'
 import LineChart from '../components/LineChart.jsx'
 
@@ -29,10 +30,10 @@ export default function Home() {
     const eff = effectiveRoutineId(S, iso), ovr = S.dayPlan[iso] !== undefined, done = doneDays.has(iso)
     const dot = done ? ' done' : ovr && eff ? ' ovr' : eff ? ' plan' : ''
     strip.push(<div key={i} className={'wday' + (iso === todayISO() ? ' today' : '')} onClick={() => dayOverrideSheet(iso)}>
-      <div className="lbl">{DAYS[d.getDay()]}</div><div className="num">{d.getDate()}</div><div className={'dot' + dot} /></div>)
+      <div className="lbl">{t(DAYS[d.getDay()])}</div><div className="num">{d.getDate()}</div><div className={'dot' + dot} /></div>)
   }
   const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6)
-  const wkLabel = weekOffset === 0 ? 'This week' : `${monday.getDate()} ${monday.toLocaleDateString('en-GB', { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString('en-GB', { month: 'short' })}`
+  const wkLabel = weekOffset === 0 ? t('This week') : `${monday.getDate()} ${monday.toLocaleDateString(dateLocale(), { month: 'short' })} – ${sunday.getDate()} ${sunday.toLocaleDateString(dateLocale(), { month: 'short' })}`
 
   const wThisWeek = S.workouts.filter(w => weekKey(w.d) === weekKey(todayISO())).length
   const plannedPerWeek = Object.keys(S.week).filter(k => S.week[k]).length
@@ -43,7 +44,7 @@ export default function Home() {
 
   return <div className="narrow">
     <div className="hdr">
-      <div><h1>{user ? 'Hi ' + user.name + ' 💪' : 'openGym 🏋️'}</h1><div className="sub">{today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
+      <div><h1>{user ? t('Hi {0} 💪', user.name) : 'openGym 🏋️'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <button className="iconbtn" onClick={() => nav('/settings')}>⚙️</button>
     </div>
 
@@ -58,31 +59,31 @@ export default function Home() {
         <div className="row" style={{ gap: 9, minWidth: 0 }}>
           <span style={{ fontSize: '1.35rem', flex: 'none' }}>{S.active ? '⏱️' : routine ? (routine.emoji || '💪') : '😌'}</span>
           <div style={{ minWidth: 0 }}>
-            <div className="lbl2">Today</div>
-            <div className="ttl">{S.active ? S.active.name + ' — in progress' : routine ? routine.name : 'Rest day'}{todayOvr && routine ? ' · rescheduled' : ''}</div>
+            <div className="lbl2">{t('Today')}</div>
+            <div className="ttl">{S.active ? t('{0} — in progress', S.active.name) : routine ? routine.name : t('Rest day')}{todayOvr && routine ? ' · ' + t('rescheduled') : ''}</div>
           </div>
         </div>
-        {S.active ? <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }}>Resume ▶</span>
-          : routine ? <span className="tag acc">Start ▶</span>
+        {S.active ? <span className="tag" style={{ color: 'var(--orange)', borderColor: 'var(--orange)' }}>{t('Resume ▶')}</span>
+          : routine ? <span className="tag acc">{t('Start ▶')}</span>
           : <span className="chev">＋</span>}
       </div>
     </div>
 
     {!S.routines.length && !S.active && (
       <div className="card">
-        <div className="big" style={{ marginBottom: 4 }}>Welcome! 👋</div>
-        <div className="muted small" style={{ marginBottom: 12 }}>Set up your weekly routine to get going — or load a ready-made Push / Pull / Legs plan.</div>
-        <button className="btn primary" onClick={loadStarterPlan}>Load starter plan (PPL)</button>
-        <div style={{ height: 8 }} /><button className="btn" onClick={() => nav('/plan')}>Build my own plan</button>
+        <div className="big" style={{ marginBottom: 4 }}>{t('Welcome! 👋')}</div>
+        <div className="muted small" style={{ marginBottom: 12 }}>{t('Set up your weekly routine to get going — or load a ready-made Push / Pull / Legs plan.')}</div>
+        <button className="btn primary" onClick={loadStarterPlan}>{t('Load starter plan (PPL)')}</button>
+        <div style={{ height: 8 }} /><button className="btn" onClick={() => nav('/plan')}>{t('Build my own plan')}</button>
       </div>
     )}
 
     <div className="card">
       <div className="row between" style={{ marginBottom: 6 }}>
-        <h2 style={{ margin: 0 }}>Body weight</h2>
+        <h2 style={{ margin: 0 }}>{t('Body weight')}</h2>
         <div className="row" style={{ gap: 8 }}>
-          <button className="btn sm" style={S.targetW ? { color: 'var(--gold)' } : undefined} onClick={goalSheet}>🎯 {S.targetW ? fmtNum(S.targetW) : 'Goal'}</button>
-          <button className="btn sm" onClick={() => bwSheet()}>+ Log</button>
+          <button className="btn sm" style={S.targetW ? { color: 'var(--gold)' } : undefined} onClick={goalSheet}>🎯 {S.targetW ? fmtNum(S.targetW) : t('Goal')}</button>
+          <button className="btn sm" onClick={() => bwSheet()}>+ {t('Log')}</button>
         </div>
       </div>
       {bw ? <>
@@ -91,16 +92,16 @@ export default function Home() {
           {delta !== null && <span className="small" style={{ fontWeight: 700, color: bwDeltaColor(delta, bw.w) }}>{delta > 0 ? '▲' : delta < 0 ? '▼' : '•'} {fmtNum(Math.abs(delta))}</span>}
           <span className="dim small" style={{ marginLeft: 'auto' }}>{fmtDate(bw.d, true)}</span>
         </div>
-        {S.targetW && <div className="small" style={{ color: 'var(--gold)', marginTop: 2 }}>🎯 Goal {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? 'reached! 🎉' : fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit + ' to ' + (S.targetW > bw.w ? 'gain' : 'lose')}</div>}
+        {S.targetW && <div className="small" style={{ color: 'var(--gold)', marginTop: 2 }}>🎯 {t('Goal')} {fmtNum(S.targetW)} {S.unit} · {Math.abs(S.targetW - bw.w) < 0.05 ? t('reached! 🎉') : t(S.targetW > bw.w ? '{0} to gain' : '{0} to lose', fmtNum(Math.abs(S.targetW - bw.w)) + ' ' + S.unit)}</div>}
         <div className="chart" style={{ marginTop: 8 }}><LineChart points={bwPoints} h={130} unit={S.unit} goal={S.targetW} /></div>
-      </> : <div className="muted small">No entries yet — log your weight to start the curve. It's also asked before every workout.</div>}
+      </> : <div className="muted small">{t("No entries yet — log your weight to start the curve. It's also asked before every workout.")}</div>}
     </div>
 
     <div className="card tappable" style={{ cursor: 'pointer' }} onClick={() => calendarSheet()}>
       <div className="row between">
         <div>
-          <div style={{ fontSize: '1.35rem', fontWeight: 800 }}>🔥 {streakWeeks(S)} week streak</div>
-          <div className="muted small" style={{ marginTop: 2 }}>{wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} this week · {S.workouts.length} workout{S.workouts.length === 1 ? '' : 's'} total</div>
+          <div style={{ fontSize: '1.35rem', fontWeight: 800 }}>🔥 {t('{0} week streak', streakWeeks(S))}</div>
+          <div className="muted small" style={{ marginTop: 2 }}>{wThisWeek}{plannedPerWeek ? ' / ' + plannedPerWeek : ''} {t('this week')} · {t(S.workouts.length === 1 ? '{0} workout total' : '{0} workouts total', S.workouts.length)}</div>
         </div>
         <span className="chev" style={{ fontSize: '1.4rem' }}>📅</span>
       </div>

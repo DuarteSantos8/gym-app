@@ -1,4 +1,5 @@
 // Formatting + date helpers (ported from the vanilla app, unit taken from the store where needed).
+import { dateLocale } from './i18n.js'
 export const todayISO = () => {
   const d = new Date()
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
@@ -13,7 +14,7 @@ export const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'Jun
 
 export function fmtDate(iso, long) {
   const d = new Date(iso + 'T12:00:00')
-  return d.toLocaleDateString('en-GB', long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' })
+  return d.toLocaleDateString(dateLocale(), long ? { weekday: 'short', day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' })
 }
 export function fmtDur(ms) {
   const m = Math.floor(ms / 60000)

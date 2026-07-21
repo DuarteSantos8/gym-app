@@ -5,9 +5,11 @@ openGym's own code is licensed under the **GNU AGPL v3.0** (see [LICENSE](LICENS
 
 ## Exercise data & media
 
-The exercise names, instructions, images and animations (fetched into `media/` at build time and
-indexed in `frontend/src/lib/exercises-data.js`) come from
+The exercise names, instructions (English in `frontend/src/lib/exercises-data.js`, other
+languages in `frontend/src/instr/`, regenerated via `scripts/build-instructions.mjs`), images
+and animations (fetched into `media/` at build time) come from
 [**hasaneyldrm/exercises-dataset**](https://github.com/hasaneyldrm/exercises-dataset)
 and are **not** covered by openGym's AGPL license — they remain under that dataset's own terms.
-This media is not distributed in this repository; it is downloaded from the upstream source on
-first run. If you redistribute openGym with the media included, review the upstream license first.
+The media files are not distributed in this repository; they are downloaded from the upstream
+source on first run. If you redistribute openGym with the media included, review the upstream
+license first.

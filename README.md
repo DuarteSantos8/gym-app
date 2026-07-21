@@ -55,6 +55,7 @@ as a home-screen app, passkey sign-in, offline support, sync across your phone a
 - 🟩 **Activity heatmap** — a GitHub-style year view, shaded by time spent training
 - 🔑 **Passkeys, not passwords** — Face ID / Touch ID / fingerprint login; each profile keeps its own data, synced across devices
 - 🎨 **Themes** — light/dark + 8 accent colors, saved to your profile
+- 🌍 **12 languages** — full UI translation (EN, DE, ES, FR, IT, PT, PL, TR, RU, ZH, KO, HI); exercise instructions localized in 10 of them, loaded on demand so the app stays fast
 - 📦 **Yours to keep** — one-tap JSON export/import, guest mode, **no telemetry**
 
 ## Quick start (self-host)
@@ -122,7 +123,7 @@ Rough, community-driven — ideas and PRs welcome:
 - [ ] Importers from Strong / Hevy (CSV → openGym JSON)
 - [ ] Body measurements (waist, arms…) alongside weight
 - [ ] Per-exercise notes & plate calculator
-- [ ] More exercise-instruction languages (the dataset ships several)
+- [ ] Exercise instructions in German & Portuguese (UI is translated; upstream dataset doesn't ship these yet)
 
 ## Tech
 

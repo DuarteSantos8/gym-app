@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react'
 import { fmtNum, fmtDate, MONTHS, isoOf } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 
 // points: [{ t: ms, y: num, d?: iso }] sorted by t. opts: { h, unit, color, axes, goal }
 export default function LineChart({ points, h = 150, unit = '', color = 'var(--acc)', axes = true, goal = null }) {
   const svgRef = useRef(null)
   const [hover, setHover] = useState(null)   // { x, y, iso, v }
 
-  if (!points || points.length === 0) return <div className="empty small">No data yet</div>
+  if (!points || points.length === 0) return <div className="empty small">{t('No data yet')}</div>
   const W = 340, H = h
   const P = { l: axes ? 34 : 8, r: 12, t: 10, b: axes ? 22 : 8 }
   const single = points.length === 1
@@ -36,11 +37,11 @@ export default function LineChart({ points, h = 150, unit = '', color = 'var(--a
     const d0 = new Date(t0), d1 = new Date(t1)
     const ticks = []
     let m = new Date(d0.getFullYear(), d0.getMonth() + 1, 1)
-    while (m <= d1) { ticks.push({ t: +m, txt: MONTHS[m.getMonth()] }); m = new Date(m.getFullYear(), m.getMonth() + 1, 1) }
+    while (m <= d1) { ticks.push({ t: +m, txt: t(MONTHS[m.getMonth()]) }); m = new Date(m.getFullYear(), m.getMonth() + 1, 1) }
     if (ticks.length === 0 && !single) {
       for (let i = 0; i <= 2; i++) {
-        const t = t0 + (t1 - t0) * i / 2, dd = new Date(t)
-        ticks.push({ t, txt: dd.getDate() + ' ' + MONTHS[dd.getMonth()], anchor: i === 0 ? 'start' : i === 2 ? 'end' : 'middle' })
+        const tv = t0 + (t1 - t0) * i / 2, dd = new Date(tv)
+        ticks.push({ t: tv, txt: dd.getDate() + ' ' + t(MONTHS[dd.getMonth()]), anchor: i === 0 ? 'start' : i === 2 ? 'end' : 'middle' })
       }
     }
     const every = Math.max(1, Math.ceil(ticks.length / 7))

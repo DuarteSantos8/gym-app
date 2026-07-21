@@ -6,6 +6,7 @@ import { EXIDX, isCardio } from '../lib/exercises.js'
 import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, setsDoneActive, supersetUnits, unitOf, setLabel } from '../lib/history.js'
 import { fmtNum, fmtDate, todayISO, DAYN } from '../lib/format.js'
 import { beep, vibrate } from '../lib/sound.js'
+import { t } from '../lib/i18n.js'
 import Media from '../components/Media.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
 
@@ -17,23 +18,23 @@ function StartChooser() {
   const todayOvr = S.dayPlan[todayISO()] !== undefined
   const others = S.routines.filter(r => r !== todayR)
   return <div className="narrow">
-    <div className="hdr"><div><h1>Start workout</h1><div className="sub">{DAYN[new Date().getDay()]} — {todayR ? 'today is ' + todayR.name : 'rest day, but no one’s stopping you'}</div></div></div>
+    <div className="hdr"><div><h1>{t('Start workout')}</h1><div className="sub">{t(DAYN[new Date().getDay()])} — {todayR ? t('today is {0}', todayR.name) : t('rest day, but no one’s stopping you')}</div></div></div>
     {todayR && <div className="card" style={{ borderColor: 'var(--acc)' }}>
-      <h2 className="accent">Today's plan{todayOvr ? ' · rescheduled' : ''}</h2>
+      <h2 className="accent">{t("Today's plan")}{todayOvr ? ' · ' + t('rescheduled') : ''}</h2>
       <div className="row between" style={{ marginBottom: 12 }}>
-        <div><div className="big">{todayR.name}</div><div className="muted small">{todayR.ex.length} exercises</div></div>
+        <div><div className="big">{todayR.name}</div><div className="muted small">{t('{0} exercises', todayR.ex.length)}</div></div>
         <div style={{ fontSize: '2rem' }}>{todayR.emoji || '💪'}</div>
       </div>
-      <button className="btn primary" onClick={() => startFlow(todayR.id)}>Start {todayR.name} ▶</button>
+      <button className="btn primary" onClick={() => startFlow(todayR.id)}>{t('Start {0} ▶', todayR.name)}</button>
     </div>}
-    {others.length > 0 && <><h4 className="sec">Other routines</h4>
+    {others.length > 0 && <><h4 className="sec">{t('Other routines')}</h4>
       <div className="list">{others.map(r => <div key={r.id} className="item" onClick={() => startFlow(r.id)}>
         <div style={{ fontSize: '1.5rem', flex: 'none' }}>{r.emoji || '💪'}</div>
-        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{r.ex.length} exercises</div></div>
-        <span className="tag acc">Start ▶</span></div>)}</div></>}
+        <div className="grow"><div className="tt">{r.name}</div><div className="ss">{t('{0} exercises', r.ex.length)}</div></div>
+        <span className="tag acc">{t('Start ▶')}</span></div>)}</div></>}
     <div style={{ height: 14 }} />
-    <button className="btn" onClick={() => startFlow(null)}>🎯 Freestyle workout (pick as you go)</button>
-    {!S.routines.length && <><div style={{ height: 10 }} /><button className="btn primary" onClick={() => nav('/plan')}>Build a plan first</button></>}
+    <button className="btn" onClick={() => startFlow(null)}>🎯 {t('Freestyle workout (pick as you go)')}</button>
+    {!S.routines.length && <><div style={{ height: 10 }} /><button className="btn primary" onClick={() => nav('/plan')}>{t('Build a plan first')}</button></>}
   </div>
 }
 
@@ -57,8 +58,8 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddS
   const best = cardio ? 0 : bestWeightFor(S, entry.id)
   const hint = !cardio && last && last.sets.length >= (entry.target.sets || 1) && last.sets.every(s => s.r >= entry.target.reps) && last.sets[0].w > 0
     ? Math.max(...last.sets.map(s => s.w)) + 2.5 : null
-  const col1 = cardio ? { f: 'min', step: 1, dec: false, hd: 'Duration (min)' } : { f: 'w', step: 2.5, dec: true, hd: `Weight (${S.unit})` }
-  const col2 = cardio ? { f: 'speed', step: 0.5, dec: true, hd: 'Speed (km/h)' } : { f: 'r', step: 1, dec: false, hd: 'Reps' }
+  const col1 = cardio ? { f: 'min', step: 1, dec: false, hd: t('Duration (min)') } : { f: 'w', step: 2.5, dec: true, hd: t('Weight ({0})', S.unit) }
+  const col2 = cardio ? { f: 'speed', step: 0.5, dec: true, hd: t('Speed (km/h)') } : { f: 'r', step: 1, dec: false, hd: t('Reps') }
   const cell = (s, i, col, cls) => (
     <div className={'step ' + cls}>
       <button onClick={() => onField(i, col.f, Math.max(0, Math.round(((s[col.f] || 0) - col.step) * 100) / 100))}>−</button>
@@ -74,12 +75,12 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddS
       <button className="iconbtn" onClick={() => exerciseDetailSheet(ex)}>ℹ️</button>
     </div>
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-      {cardio && <span className="tag acc">🏃 Cardio</span>}
-      <span className="tag">{ex.tg || ex.bp}</span><span className="tag">{ex.eq}</span>
-      {best > 0 && <span className="tag">Best: {fmtNum(best)} {S.unit}</span>}
+      {cardio && <span className="tag acc">🏃 {t('Cardio')}</span>}
+      <span className="tag">{t(ex.tg || ex.bp)}</span><span className="tag">{t(ex.eq)}</span>
+      {best > 0 && <span className="tag">{t('Best:')} {fmtNum(best)} {S.unit}</span>}
     </div>
-    {last && <div className="small dim" style={{ marginBottom: 4 }}>Last time ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s)).join(', ')}</div>}
-    {hint && <button className="tag acc" style={{ border: 'none' }} onClick={() => { onBumpAll('w', hint); useUI.getState().toast('Weights bumped to ' + fmtNum(hint) + ' ' + S.unit + ' 💪') }}>💡 Last time you hit all reps — try {fmtNum(hint)} {S.unit}</button>}
+    {last && <div className="small dim" style={{ marginBottom: 4 }}>{t('Last time')} ({fmtDate(last.d)}): {last.sets.map(s => setLabel(entry.id, s)).join(', ')}</div>}
+    {hint && <button className="tag acc" style={{ border: 'none' }} onClick={() => { onBumpAll('w', hint); useUI.getState().toast(t('Weights bumped to {0} 💪', fmtNum(hint) + ' ' + S.unit)) }}>💡 {t('Last time you hit all reps — try {0}', fmtNum(hint) + ' ' + S.unit)}</button>}
     <div className="card" style={{ marginTop: 10, marginBottom: 0 }}>
       <div className="sethead"><span className="n-sp" /><span className="w-sp">{col1.hd}</span><span className="r-sp">{col2.hd}</span><span className="ck-sp" /></div>
       {entry.sets.map((s, i) => <div key={i} className={'setrow' + (s.done ? ' done' : '')}>
@@ -90,8 +91,8 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddS
       </div>)}
       <div style={{ height: 8 }} />
       <div className="row">
-        <button className="btn sm" disabled={entry.sets.length <= 1} onClick={onRemoveSet}>− Remove set</button>
-        <button className="btn sm" onClick={onAddSet}>+ Add set</button>
+        <button className="btn sm" disabled={entry.sets.length <= 1} onClick={onRemoveSet}>− {t('Remove set')}</button>
+        <button className="btn sm" onClick={onAddSet}>+ {t('Add set')}</button>
       </div>
     </div>
   </>
@@ -143,22 +144,22 @@ function ActiveWorkout() {
     // cardio or already-confirmed: go straight to the prompt.
     if (askTop) topWeightSheet(idx)
     else if (workoutDone) workoutCompleteSheet()
-    else if (exJustDone && cardioEntry) useUI.getState().toast('Cardio logged 🏃')
+    else if (exJustDone && cardioEntry) useUI.getState().toast(t('Cardio logged 🏃'))
   }
 
   return <div className="narrow">
     <div className="hdr">
-      <button className="iconbtn" onClick={() => confirmSheet({ title: 'Discard workout?', message: 'The sets you logged in this session will be lost.', confirmText: 'Discard', danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}>✕</button>
-      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 800 }}>{A.name}</div><div className="sub"><Elapsed start={A.start} /> · {done}/{total} sets</div></div>
+      <button className="iconbtn" onClick={() => confirmSheet({ title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true, onConfirm: () => { update(s => { s.active = null }); stopRest(); nav('/home') } })}>✕</button>
+      <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 800 }}>{A.name}</div><div className="sub"><Elapsed start={A.start} /> · {t('{0} sets', done + '/' + total)}</div></div>
       <button className="iconbtn" style={{ color: 'var(--acc)' }} onClick={finishWorkout}>✓</button>
     </div>
     <div className="wprog"><i style={{ width: (total ? done / total * 100 : 0) + '%' }} /></div>
 
     {A.entries.length ? <>
-      <div className="muted small" style={{ marginBottom: 6 }}>{isSuperset ? `Superset ${unitIdx + 1} / ${units.length}` : `Exercise ${unitIdx + 1} / ${units.length}`}</div>
+      <div className="muted small" style={{ marginBottom: 6 }}>{isSuperset ? t('Superset {0} / {1}', unitIdx + 1, units.length) : t('Exercise {0} / {1}', unitIdx + 1, units.length)}</div>
       {isSuperset ? (
         <div className="ss-card">
-          <div className="ss-hd">🔗 Superset · do these back-to-back, rest after both</div>
+          <div className="ss-hd">🔗 {t('Superset · do these back-to-back, rest after both')}</div>
           {unit.map((idx, k) => <div key={idx} className="ss-ex">
             {k > 0 && <div className="ss-amp">+</div>}
             <ExerciseBlock entryIdx={idx} compact
@@ -168,24 +169,24 @@ function ActiveWorkout() {
       ) : (
         <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onBumpAll={(f, v) => bumpAll(cur, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} />
       )}
-    </> : <div className="empty"><div className="ico">🎯</div>Freestyle workout — add your first exercise.</div>}
+    </> : <div className="empty"><div className="ico">🎯</div>{t('Freestyle workout — add your first exercise.')}</div>}
 
     <div style={{ height: 12 }} />
     <div className="row">
-      <button className="btn" disabled={unitIdx <= 0} onClick={() => update(s => { s.active.cur = units[unitIdx - 1][0] })}>‹ Prev</button>
-      <button className="btn" disabled={unitIdx < 0 || unitIdx >= units.length - 1} onClick={() => update(s => { s.active.cur = units[unitIdx + 1][0] })}>Next ›</button>
+      <button className="btn" disabled={unitIdx <= 0} onClick={() => update(s => { s.active.cur = units[unitIdx - 1][0] })}>‹ {t('Prev')}</button>
+      <button className="btn" disabled={unitIdx < 0 || unitIdx >= units.length - 1} onClick={() => update(s => { s.active.cur = units[unitIdx + 1][0] })}>{t('Next')} ›</button>
     </div>
     <div style={{ height: 10 }} />
     <button className="btn" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => update(s => {
       s.active.entries.push({ id: ex.id, target: { ...cfg }, sets: buildSets(s, { ...cfg, id: ex.id }) })
       s.active.cur = s.active.entries.length - 1
-    })))}>+ Add exercise</button>
+    })))}>+ {t('Add exercise')}</button>
     <div style={{ height: 10 }} />
     {(() => {
       const exDone = A.entries.filter(e => e.sets.length && e.sets.every(s => s.done)).length
       const allDone = A.entries.length > 0 && exDone === A.entries.length
       return <button className={allDone ? 'btn primary' : 'btn ghost dim'} onClick={finishWorkout}>
-        {allDone ? 'Finish workout 🏁' : `Finish workout early · ${exDone}/${A.entries.length} exercises`}
+        {allDone ? t('Finish workout 🏁') : t('Finish workout early · {0} exercises', exDone + '/' + A.entries.length)}
       </button>
     })()}
     <div style={{ height: 40 }} />

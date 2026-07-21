@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { fmtVol, isoOf, todayISO } from '../lib/format.js'
+import { fmtVol, isoOf, todayISO, MONTHS } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 
 // GitHub-style activity heatmap, shaded by time trained per day.
 export default function Heatmap({ S, onDay }) {
@@ -27,7 +28,7 @@ export default function Heatmap({ S, onDay }) {
     const colStart = new Date(start); colStart.setDate(start.getDate() + wk * 7)
     const mo = colStart.getMonth()
     const showM = mo !== lastMonth && colStart.getDate() <= 7 && wk < 51
-    months.push(<span key={wk}>{showM ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mo] : ''}</span>)
+    months.push(<span key={wk}>{showM ? t(MONTHS[mo]) : ''}</span>)
     if (colStart.getDate() <= 7) lastMonth = mo
     const cells = []
     for (let d = 0; d < 7; d++) {
@@ -36,7 +37,7 @@ export default function Heatmap({ S, onDay }) {
       const a = agg[key]
       const cls = 'hm-c l' + level(a) + (key === todayISO() ? ' today' : '') + (day > today ? ' future' : '')
       cells.push(<div key={d} className={cls}
-        title={key + (a ? ` · ${a.n} workout${a.n > 1 ? 's' : ''} · ${a.min} min · ${fmtVol(a.vol, S.unit)}` : '')}
+        title={key + (a ? ` · ${t(a.n === 1 ? '{0} workout' : '{0} workouts', a.n)} · ${a.min} min · ${fmtVol(a.vol, S.unit)}` : '')}
         onClick={a ? () => onDay(key) : undefined} />)
     }
     cols.push(<div key={wk} className="hm-col">{cells}</div>)
@@ -46,10 +47,10 @@ export default function Heatmap({ S, onDay }) {
     <div className="hm-wrap" ref={wrapRef}>
       <div className="hm-months" style={{ marginLeft: 30 }}>{months}</div>
       <div className="hm-body">
-        <div className="hm-days"><span>Mon</span><span /><span>Wed</span><span /><span>Fri</span><span /><span /></div>
+        <div className="hm-days"><span>{t('Mon')}</span><span /><span>{t('Wed')}</span><span /><span>{t('Fri')}</span><span /><span /></div>
         <div className="hm-grid">{cols}</div>
       </div>
     </div>
-    <div className="hm-legend">Less time <div className="hm-c l0" /><div className="hm-c l1" /><div className="hm-c l2" /><div className="hm-c l3" /><div className="hm-c l4" /> More time</div>
+    <div className="hm-legend">{t('Less time')} <div className="hm-c l0" /><div className="hm-c l1" /><div className="hm-c l2" /><div className="hm-c l3" /><div className="hm-c l4" /> {t('More time')}</div>
   </>
 }

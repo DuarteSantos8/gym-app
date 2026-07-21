@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutine } from '../lib/history.js'
 import { todayISO } from '../lib/format.js'
+import { t } from '../lib/i18n.js'
 
 const ICONS = {
   home: <path d="M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5" />,
@@ -31,14 +32,14 @@ export default function TabBar({ onStart }) {
 
   return (
     <nav id="tabbar">
-      <button className={on('home') ? 'on' : ''} onClick={() => nav('/home')}><Icon k="home" /><span>Home</span></button>
-      <button className={on('plan') ? 'on' : ''} onClick={() => nav('/plan')}><Icon k="plan" /><span>Plan</span></button>
+      <button className={on('home') ? 'on' : ''} onClick={() => nav('/home')}><Icon k="home" /><span>{t('Home')}</span></button>
+      <button className={on('plan') ? 'on' : ''} onClick={() => nav('/plan')}><Icon k="plan" /><span>{t('Plan')}</span></button>
       <button className={'start' + (S.active ? ' rec' : '')} onClick={startWorkout}>
         <span className="cir"><svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M2.5 9.5v5M21.5 9.5v5M6.5 12h11" /></svg></span>
-        <span>{S.active ? 'Resume' : 'Start'}</span>
+        <span>{S.active ? t('Resume') : t('Start')}</span>
       </button>
-      <button className={on('stats') ? 'on' : ''} onClick={() => nav('/stats')}><Icon k="stats" /><span>Stats</span></button>
-      <button className={on('library') ? 'on' : ''} onClick={() => nav('/library')}><Icon k="library" /><span>Exercises</span></button>
+      <button className={on('stats') ? 'on' : ''} onClick={() => nav('/stats')}><Icon k="stats" /><span>{t('Stats')}</span></button>
+      <button className={on('library') ? 'on' : ''} onClick={() => nav('/library')}><Icon k="library" /><span>{t('Exercises')}</span></button>
     </nav>
   )
 }

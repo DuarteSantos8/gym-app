@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.2.0 — 2026-07-21
+
+Localization — the whole app now speaks your language. (#7)
+
+- 🌍 **12 UI languages**: English, Deutsch, Español, Français, Italiano, Português, Polski,
+  Türkçe, Русский, 中文, 한국어, हिन्दी. Pick yours under Settings → Appearance → Language;
+  the choice syncs with your profile like the theme does.
+- 📖 **Localized exercise instructions** for 10 of those languages (all except German and
+  Portuguese, which the upstream dataset doesn't cover yet — those fall back to English),
+  covering all 1,324 exercises. Body-part filters, equipment and muscle tags are translated
+  too; exercise *names* stay English (upstream limitation).
+- 📅 Dates, weekday and month labels follow the selected language.
+- ⚡ Zero cost when unused: the app still ships English-only by default. Each UI language is a
+  ~7 kB chunk and each instruction pack ~80–120 kB (gzipped), downloaded only when you switch —
+  the initial bundle size is unchanged.
+- 🛠️ New `scripts/build-instructions.mjs` regenerates the instruction packs from the upstream
+  dataset; translations live in `frontend/src/locales/` (PRs welcome — it's one flat
+  English-string → translation map per language).
+- Known gaps: push notification texts (sent by the server) and plural forms in some languages
+  are approximated; happy to take corrections from native speakers.
+
 ## v1.1.2 — 2026-07-21
 
 - 📱 Fixed the exercise-config sheet (Sets / Reps / Weight, and the cardio variant) overflowing the

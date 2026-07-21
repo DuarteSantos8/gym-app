@@ -4,7 +4,7 @@ import { localTZ } from '../lib/format.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
-  unit: 'kg', restSec: 90, sound: true,
+  unit: 'kg', restSec: 90, sound: true, lang: 'en',
   theme: 'dark', accent: 'lime', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null,
