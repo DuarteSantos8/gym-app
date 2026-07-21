@@ -35,6 +35,16 @@ export const useStore = create((set, get) => {
     }
   }
 
+  // A setting changed right before switching away/closing the tab must not get lost mid-debounce
+  // (e.g. setting the reminder time then immediately backgrounding to test it).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && pushTm) {
+      clearTimeout(pushTm)
+      pushTm = null
+      get().pushState()
+    }
+  })
+
   return {
     S: loadState(),
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
