@@ -48,7 +48,7 @@ function Elapsed({ start }) {
 }
 
 /* ---------- one exercise block (strength: weight×reps · cardio: duration+speed) ---------- */
-function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddSet }) {
+function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddSet, onRemoveSet }) {
   const S = useStore(s => s.S)
   const entry = S.active.entries[entryIdx]
   const ex = EXIDX[entry.id]
@@ -89,7 +89,10 @@ function ExerciseBlock({ entryIdx, compact, onToggle, onField, onBumpAll, onAddS
         <button className={'ck' + (s.done ? ' on' : '')} onClick={() => onToggle(i)}><svg viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11" /></svg></button>
       </div>)}
       <div style={{ height: 8 }} />
-      <button className="btn sm" onClick={onAddSet}>+ Add set</button>
+      <div className="row">
+        <button className="btn sm" disabled={entry.sets.length <= 1} onClick={onRemoveSet}>− Remove set</button>
+        <button className="btn sm" onClick={onAddSet}>+ Add set</button>
+      </div>
     </div>
   </>
 }
@@ -118,6 +121,7 @@ function ActiveWorkout() {
     if (isCardio(e.id)) e.sets.push({ min: l ? l.min : (e.target.min || 20), speed: l ? l.speed : (e.target.speed || 8), done: false })
     else e.sets.push({ w: l ? l.w : 0, r: l ? l.r : e.target.reps, done: false })
   })
+  const removeSet = idx => mutEntry(idx, e => { if (e.sets.length > 1) e.sets.pop() })
 
   const toggle = (idx, i) => {
     const cardioEntry = isCardio(A.entries[idx].id)
@@ -158,11 +162,11 @@ function ActiveWorkout() {
           {unit.map((idx, k) => <div key={idx} className="ss-ex">
             {k > 0 && <div className="ss-amp">+</div>}
             <ExerciseBlock entryIdx={idx} compact
-              onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onBumpAll={(f, v) => bumpAll(idx, f, v)} onAddSet={() => addSet(idx)} />
+              onToggle={i => toggle(idx, i)} onField={(i, f, v) => setField(idx, i, f, v)} onBumpAll={(f, v) => bumpAll(idx, f, v)} onAddSet={() => addSet(idx)} onRemoveSet={() => removeSet(idx)} />
           </div>)}
         </div>
       ) : (
-        <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onBumpAll={(f, v) => bumpAll(cur, f, v)} onAddSet={() => addSet(cur)} />
+        <ExerciseBlock entryIdx={cur} onToggle={i => toggle(cur, i)} onField={(i, f, v) => setField(cur, i, f, v)} onBumpAll={(f, v) => bumpAll(cur, f, v)} onAddSet={() => addSet(cur)} onRemoveSet={() => removeSet(cur)} />
       )}
     </> : <div className="empty"><div className="ico">🎯</div>Freestyle workout — add your first exercise.</div>}
 
