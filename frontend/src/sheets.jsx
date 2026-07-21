@@ -46,19 +46,28 @@ export function loadStarterPlan() {
 /* ============================ weight picker (shared: body weight + goal) ============================ */
 function WeightInput({ value, setValue, unit }) {
   const clamp = x => Math.max(20, Math.min(300, Math.round((x || 0) * 10) / 10))
+  const HALF = 60 // slider window half-width — generous enough that most values never need to extend it
   const range = useRef(null)
-  if (!range.current) { const s = value || 70; range.current = [Math.max(30, Math.round(s - 20)), Math.min(250, Math.round(s + 20))] }
+  if (!range.current) { const s = value || 70; range.current = [Math.max(20, Math.round(s - HALF)), Math.min(300, Math.round(s + HALF))] }
   const [lo, hi] = range.current
   const sv = Math.max(lo, Math.min(hi, value))
   const pct = ((sv - lo) / (hi - lo)) * 100
+  // Dragging (or stepping) to either edge extends the window further instead of getting stuck
+  // there — the old fixed window (computed once, ±20) is exactly what capped the slider at ~90kg.
+  const onSlide = v => {
+    const n = clamp(v)
+    if (n <= lo && lo > 20) range.current = [Math.max(20, lo - HALF), hi]
+    if (n >= hi && hi < 300) range.current = [lo, Math.min(300, hi + HALF)]
+    setValue(n)
+  }
   return <>
     <div className="bwstep">
-      <button className="bw-pm" onClick={() => setValue(p => clamp(p - 0.1))} aria-label="minus">−</button>
+      <button className="bw-pm" onClick={() => onSlide(value - 0.1)} aria-label="minus">−</button>
       <div className="bw-read">{fmtNum(value)}<span className="u"> {unit}</span></div>
-      <button className="bw-pm" onClick={() => setValue(p => clamp(p + 0.1))} aria-label="plus">+</button>
+      <button className="bw-pm" onClick={() => onSlide(value + 0.1)} aria-label="plus">+</button>
     </div>
     <input className="bw-slider" type="range" min={lo} max={hi} step="0.1" value={sv}
-      onChange={e => setValue(clamp(parseFloat(e.target.value)))}
+      onChange={e => onSlide(parseFloat(e.target.value))}
       style={{ '--track': `linear-gradient(90deg, var(--acc) ${pct}%, var(--bg2) ${pct}%)` }} />
   </>
 }
