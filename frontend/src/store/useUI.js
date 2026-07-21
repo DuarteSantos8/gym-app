@@ -1,7 +1,13 @@
 import { create } from 'zustand'
 import { uid } from '../lib/format.js'
 import { beep, vibrate } from '../lib/sound.js'
+import { api } from '../lib/api.js'
 import { useStore } from './useStore.js'
+
+// Fire-and-forget: lets the server push a "rest over" alert if this tab gets suspended
+// before the local timer completes. No-ops for guests / offline.
+const pushRestTimer = sec => { if (useStore.getState().user) api('/api/push/rest-timer', { method: 'POST', body: JSON.stringify({ seconds: sec }) }).catch(() => {}) }
+const cancelPushRestTimer = () => { if (useStore.getState().user) api('/api/push/rest-timer/cancel', { method: 'POST', body: '{}' }).catch(() => {}) }
 
 let toastTm = null
 let timerInt = null
@@ -31,6 +37,7 @@ export const useUI = create((set, get) => ({
     get().stopRest()
     const endsAt = Date.now() + sec * 1000
     set({ timer: { left: sec, total: sec, endsAt } })
+    pushRestTimer(sec)
     timerTick = () => {
       const t = get().timer
       if (!t) return
@@ -47,10 +54,17 @@ export const useUI = create((set, get) => ({
     timerInt = setInterval(timerTick, 1000)
     document.addEventListener('visibilitychange', timerTick)
   },
-  addRest(sec) { const t = get().timer; if (t) set({ timer: { ...t, left: t.left + sec, total: t.total + sec, endsAt: t.endsAt + sec * 1000 } }) },
+  addRest(sec) {
+    const t = get().timer
+    if (!t) return
+    const left = t.left + sec
+    set({ timer: { ...t, left, total: t.total + sec, endsAt: t.endsAt + sec * 1000 } })
+    pushRestTimer(left)
+  },
   stopRest() {
     if (timerInt) clearInterval(timerInt); timerInt = null
     if (timerTick) document.removeEventListener('visibilitychange', timerTick); timerTick = null
+    if (get().timer) cancelPushRestTimer()
     set({ timer: null })
   }
 }))

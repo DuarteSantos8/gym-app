@@ -6,7 +6,8 @@ export const DEF = {
   unit: 'kg', restSec: 90, sound: true,
   theme: 'dark', accent: 'lime', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
-  exWeights: {}, workouts: [], active: null
+  exWeights: {}, workouts: [], active: null,
+  reminder: { on: false, time: '08:00' }
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 

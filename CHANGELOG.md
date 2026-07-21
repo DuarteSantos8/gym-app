@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- 🔔 Push notifications: rest-timer-over alert (fires even if the app is closed) and an optional
+  daily reminder on days you have a workout planned but haven't logged one yet. Opt in per-profile
+  in Settings — requires a signed-in passkey profile. Backend gains one dependency (`web-push`);
+  VAPID keys are generated on first run.
+- 🐛 Fixed the rest timer stalling when the tab/app is backgrounded — it's now anchored to a real
+  timestamp instead of a plain per-second counter, so it stays accurate after you come back.
+
 ## v1.0.0 — 2026-07-20
 
 First public release. A complete, self-hostable gym & body-weight tracker.

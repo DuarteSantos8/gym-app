@@ -1,9 +1,10 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { ACCENTS, todayISO } from '../lib/format.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
+import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { loadStarterPlan, confirmSheet } from '../sheets.jsx'
 
 export default function Settings() {
@@ -82,6 +83,8 @@ export default function Settings() {
       <div className="small dim" style={{ marginTop: 6 }}>Note: switching units only changes the label — logged numbers are not converted.</div>
     </div>
 
+    {user && <NotificationsCard S={S} update={update} toast={toast} />}
+
     <div className="card">
       <h2>Data</h2>
       <button className="btn" onClick={doExport}>⬇️ Export backup (JSON)</button>
@@ -97,6 +100,53 @@ export default function Settings() {
       openGym · free & open source (AGPL v3)<br />
       <a href="https://github.com/DuarteSantos8/openGym" target="_blank" rel="noopener">source code</a> · exercise data: hasaneyldrm/exercises-dataset (CC)
     </div>
+  </div>
+}
+
+function NotificationsCard({ S, update, toast }) {
+  const [on, setOn] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const supported = pushSupported()
+
+  useEffect(() => {
+    if (!supported) return
+    navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription()).then(sub => setOn(!!sub)).catch(() => {})
+  }, [supported])
+
+  const toggle = async () => {
+    setBusy(true)
+    try {
+      if (on) { await disablePush(); setOn(false); toast('Notifications off') }
+      else { await enablePush(); setOn(true); toast('Notifications on 🔔') }
+    } catch (e) { toast(e.message || 'Could not change notification settings') }
+    setBusy(false)
+  }
+  const test = async () => {
+    try { await sendTestPush(); toast('Test sent — should arrive any second') }
+    catch (e) { toast(e.message || 'Test failed') }
+  }
+
+  return <div className="card">
+    <h2>Notifications</h2>
+    {!supported ? <div className="small dim">Not supported in this browser.</div> : <>
+      <div className="row between" style={{ padding: '8px 0' }}>
+        <div><span>Push notifications</span><div className="small muted">Rest-timer alerts, even if openGym is closed.</div></div>
+        <button className={'chip' + (on ? ' on' : '')} disabled={busy} onClick={toggle}>{on ? 'On 🔔' : 'Off 🔕'}</button>
+      </div>
+      {on && <>
+        <div className="row between" style={{ padding: '8px 0' }}>
+          <span>Workout day reminder</span>
+          <button className={'chip' + (S.reminder?.on ? ' on' : '')} onClick={() => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: !s.reminder?.on } })}>{S.reminder?.on ? 'On' : 'Off'}</button>
+        </div>
+        {S.reminder?.on && <div className="row between" style={{ padding: '8px 0' }}>
+          <span>Reminder time</span>
+          <input type="time" className="input" style={{ width: 120 }} value={S.reminder?.time || DEF.reminder.time}
+            onChange={e => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), time: e.target.value } })} />
+        </div>}
+        <div className="small dim" style={{ margin: '6px 0' }}>Only sent on days you have a routine planned and haven't logged a workout yet.</div>
+        <button className="btn sm" onClick={test}>Send test notification</button>
+      </>}
+    </>}
   </div>
 }
 

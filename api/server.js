@@ -8,6 +8,7 @@ import {
   generateRegistrationOptions, verifyRegistrationResponse,
   generateAuthenticationOptions, verifyAuthenticationResponse
 } from '@simplewebauthn/server';
+import webpush from 'web-push';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -27,8 +28,9 @@ if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, crypto.randomBytes(
 const SECRET = fs.readFileSync(secretFile, 'utf8').trim();
 
 const dbFile = path.join(DATA, 'db.json');
-let db = { users: [], creds: [] };
+let db = { users: [], creds: [], subs: [] };
 try { db = JSON.parse(fs.readFileSync(dbFile, 'utf8')); } catch {}
+db.subs = db.subs || [];
 function saveDb() { atomicWrite(dbFile, JSON.stringify(db, null, 2)); }
 function atomicWrite(file, content) {
   const tmp = file + '.tmp';
@@ -36,6 +38,85 @@ function atomicWrite(file, content) {
   fs.renameSync(tmp, file);
 }
 const stateFile = uid => path.join(DATA, 'state-' + uid.replace(/[^a-zA-Z0-9_-]/g, '') + '.json');
+function readState(uid) {
+  try { return JSON.parse(fs.readFileSync(stateFile(uid), 'utf8')); } catch { return null; }
+}
+
+/* ---------- push notifications (Web Push / VAPID) ---------- */
+const vapidFile = path.join(DATA, 'vapid.json');
+let vapid;
+try { vapid = JSON.parse(fs.readFileSync(vapidFile, 'utf8')); }
+catch { vapid = webpush.generateVAPIDKeys(); fs.writeFileSync(vapidFile, JSON.stringify(vapid), { mode: 0o600 }); }
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || (SECURE ? ORIGIN : 'mailto:admin@localhost');
+webpush.setVapidDetails(VAPID_SUBJECT, vapid.publicKey, vapid.privateKey);
+
+async function sendPush(userId, payload) {
+  const subs = db.subs.filter(s => s.userId === userId);
+  if (!subs.length) return;
+  const body = JSON.stringify(payload);
+  let dirty = false;
+  await Promise.all(subs.map(async sub => {
+    try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, body); }
+    catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) {
+        db.subs = db.subs.filter(s => s.endpoint !== sub.endpoint); dirty = true;
+      }
+    }
+  }));
+  if (dirty) saveDb();
+}
+
+// Rest-timer alerts: client schedules on start/extend, cancels on skip or on-screen completion —
+// this only fires when the tab was backgrounded/suspended and never got to cancel it itself.
+const restTimers = new Map(); // userId -> Timeout
+function scheduleRestTimer(userId, sec) {
+  const t = restTimers.get(userId);
+  if (t) clearTimeout(t);
+  restTimers.set(userId, setTimeout(() => {
+    restTimers.delete(userId);
+    sendPush(userId, { title: 'Rest over 💪', body: 'Time for your next set.', tag: 'rest-timer' });
+  }, sec * 1000));
+}
+function cancelRestTimer(userId) {
+  const t = restTimers.get(userId);
+  if (t) { clearTimeout(t); restTimers.delete(userId); }
+}
+
+// "Workout planned today" reminder — one per user per day, at their chosen time.
+// Duplicated (not imported) from frontend/src/lib/history.js effectiveRoutineId — tiny pure helper, not worth sharing across the two runtimes.
+function effectiveRoutineId(S, iso) {
+  const ov = S.dayPlan?.[iso];
+  if (ov === 'rest') return null;
+  if (ov && S.routines?.some(r => r.id === ov)) return ov;
+  const wd = new Date(iso + 'T12:00:00').getDay();
+  return S.week?.[wd] || null;
+}
+const todayISO = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+};
+setInterval(() => {
+  const now = new Date();
+  const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const today = todayISO();
+  for (const user of db.users) {
+    if (user.lastReminder === today) continue;
+    if (!db.subs.some(s => s.userId === user.id)) continue;
+    const S = readState(user.id);
+    if (!S?.reminder?.on || S.reminder.time !== hhmm) continue;
+    if ((S.workouts || []).some(w => w.d === today)) continue;
+    const rid = effectiveRoutineId(S, today);
+    if (!rid) continue; // rest day — nothing planned
+    const routine = (S.routines || []).find(r => r.id === rid);
+    user.lastReminder = today;
+    saveDb();
+    sendPush(user.id, {
+      title: routine ? `${routine.emoji || '🏋️'} ${routine.name} today` : 'Workout planned today',
+      body: "It's on your plan — let's go 💪",
+      tag: 'day-reminder'
+    });
+  }
+}, 60000).unref();
 
 /* ---------- sessions (signed cookie) ---------- */
 function sign(payload) {
@@ -223,6 +304,53 @@ const routes = {
     delete body.state.active;              // in-progress workouts stay device-local
     atomicWrite(stateFile(user.id), JSON.stringify(body.state));
     json(res, 200, { ok: true, ts: body.state._ts || null });
+  },
+
+  'GET /api/push/public-key': async (req, res) => json(res, 200, { key: vapid.publicKey }),
+
+  'POST /api/push/subscribe': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const sub = body.subscription;
+    if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) return json(res, 400, { error: 'invalid subscription' });
+    db.subs = db.subs.filter(s => s.endpoint !== sub.endpoint);
+    db.subs.push({ userId: user.id, endpoint: sub.endpoint, keys: sub.keys, created: new Date().toISOString() });
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/push/unsubscribe': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    db.subs = db.subs.filter(s => !(s.userId === user.id && s.endpoint === body.endpoint));
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/push/test': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    await sendPush(user.id, { title: 'openGym', body: 'Test notification ✅ — this is what alerts look like.', tag: 'test' });
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/push/rest-timer': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const sec = Math.max(1, Math.min(3600, Math.round(+body.seconds || 0)));
+    if (!sec) return json(res, 400, { error: 'seconds required' });
+    scheduleRestTimer(user.id, sec);
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/push/rest-timer/cancel': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    cancelRestTimer(user.id);
+    json(res, 200, { ok: true });
   }
 };
 
