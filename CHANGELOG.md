@@ -1,8 +1,10 @@
 # Changelog
 
-## v1.1.3 — 2026-07-22
+## v1.1.2 — 2026-07-22
 
-Custom exercises — add movements that aren't in the catalogue. (#11)
+Custom exercises, full localization, and input fixes.
+
+### Custom exercises (#11)
 
 - ✨ **Create your own exercise** from the exercise picker or the Exercises tab: a name and a
   body part is all it takes. Your search text is pre-filled as the name, so "no match" flows
@@ -19,15 +21,8 @@ Custom exercises — add movements that aren't in the catalogue. (#11)
   "Edit or delete this exercise". Deleting removes them from your routines; already-logged
   workouts keep their sets and still show the exercise name. (The routine sheet's old "Remove
   exercise" button is now labelled "Remove from routine", so the two are no longer confusable.)
-- ⌨️ Weight and other numeric fields now accept a comma as decimal separator ("33,5") — iOS
-  decimal keyboards in many locales only offer a comma, which previously reset the field to 0.
-  Partial input like "33," no longer snaps to 0 while typing. (#13)
-- 🌍 Everything above is fully translated into all 12 UI languages, and synced to your profile
-  like the rest of your data.
 
-## v1.2.0 — 2026-07-21
-
-Localization — the whole app now speaks your language. (#7)
+### Localization (#7)
 
 - 🌍 **12 UI languages**: English, Deutsch, Español, Français, Italiano, Português, Polski,
   Türkçe, Русский, 中文, 한국어, हिन्दी. Pick yours under Settings → Appearance → Language;
@@ -35,7 +30,7 @@ Localization — the whole app now speaks your language. (#7)
 - 📖 **Localized exercise instructions** for 10 of those languages (all except German and
   Portuguese, which the upstream dataset doesn't cover yet — those fall back to English),
   covering all 1,324 exercises. Body-part filters, equipment and muscle tags are translated
-  too; exercise *names* stay English (upstream limitation).
+  too; exercise *names* stay English (upstream limitation). Custom exercises are translated too.
 - 📅 Dates, weekday and month labels follow the selected language.
 - ⚡ Zero cost when unused: the app still ships English-only by default. Each UI language is a
   ~7 kB chunk and each instruction pack ~80–120 kB (gzipped), downloaded only when you switch —
@@ -46,8 +41,11 @@ Localization — the whole app now speaks your language. (#7)
 - Known gaps: push notification texts (sent by the server) and plural forms in some languages
   are approximated; happy to take corrections from native speakers.
 
-## v1.1.2 — 2026-07-21
+### Fixes
 
+- ⌨️ Weight and other numeric fields now accept a comma as decimal separator ("33,5") — iOS
+  decimal keyboards in many locales only offer a comma, which previously reset the field to 0.
+  Partial input like "33," no longer snaps to 0 while typing. (#13)
 - 📱 Fixed the exercise-config sheet (Sets / Reps / Weight, and the cardio variant) overflowing the
   screen edge on narrow phones — the Weight stepper was clipped and could make the whole page pan
   sideways in iOS Safari. Steppers now shrink to fit the viewport. (#10)
