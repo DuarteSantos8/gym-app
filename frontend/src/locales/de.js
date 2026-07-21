@@ -326,5 +326,25 @@ export default {
   'rear deltoids': 'hintere Schulter', 'rhomboids': 'Rhomboiden', 'rotator cuff': 'Rotatorenmanschette',
   'shins': 'Schienbeine', 'soleus': 'Schollenmuskel', 'sternocleidomastoid': 'Kopfwender',
   'trapezius': 'Trapezmuskel', 'upper chest': 'obere Brust', 'wrist extensors': 'Handstrecker',
-  'wrist flexors': 'Handbeuger', 'wrists': 'Handgelenke'
+  'wrist flexors': 'Handbeuger', 'wrists': 'Handgelenke',
+
+  // --- custom exercises (#11) ---
+  'Create your own exercise': 'Eigene Übung erstellen',
+  'Edit custom exercise': 'Eigene Übung bearbeiten',
+  'Name it and pick a body part — it behaves like any other exercise, just without an animation.': 'Name und Körperpartie festlegen — die Übung verhält sich wie jede andere, nur ohne Animation.',
+  'Exercise name': 'Übungsname',
+  'name + body part, no animation': 'Name + Körperpartie, ohne Animation',
+  'Create exercise': 'Übung erstellen',
+  'Give it a name': 'Gib ihr einen Namen',
+  'Pick a body part': 'Wähle eine Körperpartie',
+  '“{0}” already exists': '„{0}“ existiert bereits',
+  '“{0}” created ✓': '„{0}“ erstellt ✓',
+  'Cardio exercises log time + speed instead of weight × reps.': 'Cardio-Übungen erfassen Zeit + Tempo statt Gewicht × Wdh.',
+  'custom': 'eigene',
+  'Edit': 'Bearbeiten',
+  'Saved ✓': 'Gespeichert ✓',
+  'Delete “{0}”?': '„{0}“ löschen?',
+  'It will be removed from your routines. Already-logged workouts keep their sets.': 'Sie wird aus deinen Routinen entfernt. Bereits geloggte Workouts behalten ihre Sätze.',
+  'Exercise deleted': 'Übung gelöscht',
+  'Finish your current workout first': 'Beende zuerst dein laufendes Workout'
 }

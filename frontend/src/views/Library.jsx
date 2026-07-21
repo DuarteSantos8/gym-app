@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useStore } from '../store/useStore.js'
-import { EXDB, BODYPARTS } from '../lib/exercises.js'
+import { EXDB, BODYPARTS, allExercises } from '../lib/exercises.js'
 import { bestWeightFor } from '../lib/history.js'
 import { fmtNum } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import { Thumb } from '../components/Media.jsx'
-import { exerciseDetailSheet, addToRoutineSheet } from '../sheets.jsx'
+import { exerciseDetailSheet, addToRoutineSheet, customExSheet } from '../sheets.jsx'
 
 export default function Library() {
   const S = useStore(s => s.S)
@@ -13,7 +13,7 @@ export default function Library() {
   const [bp, setBp] = useState('')
   const [shown, setShown] = useState(40)
   const ql = q.toLowerCase().trim()
-  const f = EXDB.filter(e => (!bp || e.bp === bp) && (!ql || e.n.includes(ql) || e.tg.includes(ql) || e.eq.includes(ql)))
+  const f = allExercises(S).filter(e => (!bp || e.bp === bp) && (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql)))
 
   return <>
     <div className="hdr"><div><h1>{t('Exercises')}</h1><div className="sub">{t('{0} exercises with animations', EXDB.length)}</div></div></div>
@@ -24,6 +24,10 @@ export default function Library() {
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setShown(40) }}>{t(b)}</button>)}
     </div>
     <div className="list">
+      <div className="item" onClick={() => customExSheet(null, ex => exerciseDetailSheet(ex), q.trim())}>
+        <div className="thumb thumb-x">✨</div>
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><span className="chev">＋</span>
+      </div>
       {f.slice(0, shown).map(e => {
         const best = bestWeightFor(S, e.id)
         return <div key={e.id} className="item" onClick={() => exerciseDetailSheet(e)}>

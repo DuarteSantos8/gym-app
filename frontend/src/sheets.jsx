@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
-import { EXDB, EXIDX, BODYPARTS, isCardio } from './lib/exercises.js'
+import { EXDB, EXIDX, BODYPARTS, isCardio, allExercises } from './lib/exercises.js'
 import { fmtDate, fmtNum, fmtVol, fmtDur, todayISO, uid, DAYN, MONTHS_LONG, ACCENTS } from './lib/format.js'
-import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig } from './lib/history.js'
+import { lastEntryFor, bestWeightFor, buildSets, effectiveRoutineId, workoutVolume, setsDone, setsDoneActive, lastBW, supersetUnits, unitOf, setLabel, defaultConfig, cleanupSg } from './lib/history.js'
 import { beep, vibrate } from './lib/sound.js'
 import { t, instrFor, getLang, INSTR_LANGS } from './lib/i18n.js'
 import { nav } from './lib/nav.js'
@@ -148,7 +148,7 @@ function GoalSheet({ close }) {
 export const goalSheet = () => ui().openSheet(close => <GoalSheet close={close} />)
 
 /* ============================ exercise detail ============================ */
-function ExerciseDetail({ ex }) {
+function ExerciseDetail({ ex, close }) {
   const st = useStore(s => s.S)
   const last = lastEntryFor(st, ex.id)
   const best = bestWeightFor(st, ex.id)
@@ -163,10 +163,14 @@ function ExerciseDetail({ ex }) {
     </div>
     {best > 0 && <div className="small" style={{ marginBottom: 6 }}>🏆 {t('Best:')} <b className="accent">{fmtNum(best)} {st.unit}</b>{last ? ` · ${t('last')} ${fmtDate(last.d)}: ${last.sets.map(s => setLabel(ex.id, s)).join(', ')}` : ''}</div>}
     <button className="btn primary" style={{ margin: '10px 0 4px' }} onClick={() => addToRoutineSheet(ex)}>{t('＋ Add to my plan')}</button>
+    {ex.custom && <div className="row" style={{ gap: 8, marginTop: 8 }}>
+      <button className="btn" style={{ flex: 1 }} onClick={() => { close(); customExSheet(ex) }}>✏️ {t('Edit')}</button>
+      <button className="btn danger" style={{ flex: 1 }} onClick={() => deleteCustomEx(ex, close)}>🗑 {t('Delete')}</button>
+    </div>}
     {instrFor(ex).length > 0 && <><h4 className="sec">{t('How to')}{!INSTR_LANGS.includes(getLang()) && <span className="dim" style={{ textTransform: 'none', letterSpacing: 0 }}> · {t('instructions in English')}</span>}</h4><ol className="steps-list">{instrFor(ex).map((s, i) => <li key={i}>{s}</li>)}</ol></>}
   </>
 }
-export const exerciseDetailSheet = ex => ui().openSheet(() => <ExerciseDetail ex={ex} />)
+export const exerciseDetailSheet = ex => ui().openSheet(close => <ExerciseDetail ex={ex} close={close} />)
 
 /* ============================ add to routine ============================ */
 function AddToRoutine({ ex, close }) {
@@ -201,6 +205,61 @@ function AddToRoutine({ ex, close }) {
 }
 export const addToRoutineSheet = ex => ui().openSheet(close => <AddToRoutine ex={ex} close={close} />)
 
+/* ============================ custom exercises (issue #11) ============================ */
+// Name + body part is all it takes — the exercise then behaves like any built-in one
+// (planning, logging, PRs, stats), just without an animation.
+function CustomExForm({ existing, prefill, onDone, close }) {
+  const [n, setN] = useState(existing ? existing.n : (prefill || ''))
+  const [bp, setBp] = useState(existing ? existing.bp : '')
+  const save = () => {
+    const name = n.trim()
+    if (!name) { toast(t('Give it a name')); return }
+    if (!bp) { toast(t('Pick a body part')); return }
+    const dup = allExercises(S()).find(e => e.n.toLowerCase() === name.toLowerCase() && e.id !== (existing || {}).id)
+    if (dup) { toast(t('“{0}” already exists', dup.n)); return }
+    let id = existing && existing.id
+    if (existing) update(s => { const c = (s.customEx || []).find(x => x.id === id); if (c) { c.n = name; c.bp = bp } })
+    else {
+      id = 'c' + uid()
+      update(s => { (s.customEx = s.customEx || []).push({ id, n: name, bp, tg: '', eq: 'custom', custom: true }) })
+    }
+    close()
+    toast(existing ? t('Saved ✓') : t('“{0}” created ✓', name))
+    onDone && onDone(EXIDX[id])
+  }
+  return <>
+    <h3>{existing ? t('Edit custom exercise') : t('Create your own exercise')}</h3>
+    <div className="muted small" style={{ marginBottom: 12 }}>{t('Name it and pick a body part — it behaves like any other exercise, just without an animation.')}</div>
+    <input className="input" placeholder={t('Exercise name')} value={n} onChange={e => setN(e.target.value)} />
+    <div className="chips" style={{ margin: '12px 0' }}>
+      {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => setBp(b)}>{t(b)}</button>)}
+    </div>
+    {bp === 'cardio' && <div className="small dim" style={{ marginBottom: 10 }}>🏃 {t('Cardio exercises log time + speed instead of weight × reps.')}</div>}
+    <button className="btn primary" onClick={save}>{existing ? t('Save') : t('Create exercise')}</button>
+  </>
+}
+export const customExSheet = (existing, onDone, prefill) => ui().openSheet(close => <CustomExForm existing={existing} prefill={prefill} onDone={onDone} close={close} />)
+
+export function deleteCustomEx(ex, afterDelete) {
+  if (S().active?.entries.some(e => e.id === ex.id)) { toast(t('Finish your current workout first')); return }
+  confirmSheet({
+    title: t('Delete “{0}”?', ex.n),
+    message: t('It will be removed from your routines. Already-logged workouts keep their sets.'),
+    confirmText: t('Delete'), danger: true,
+    onConfirm: () => {
+      update(s => {
+        s.customEx = (s.customEx || []).filter(x => x.id !== ex.id)
+        s.routines.forEach(r => { r.ex = r.ex.filter(e => e.id !== ex.id); cleanupSg(r.ex) })
+        // stamp the name into history entries so past workouts stay readable
+        s.workouts.forEach(w => w.entries.forEach(e => { if (e.id === ex.id) e.n = ex.n }))
+        delete s.exWeights[ex.id]
+      })
+      toast(t('Exercise deleted'))
+      afterDelete && afterDelete()
+    }
+  })
+}
+
 /* ============================ exercise picker ============================ */
 // Exercises already used in your routines or past workouts (for the "Chosen" filter + a marker).
 function usageMap(st) {
@@ -216,26 +275,31 @@ function ExercisePicker({ onPick, close }) {
   const [bp, setBp] = useState('')          // '' = all, '★' = chosen, else a body part
   const [shown, setShown] = useState(50)
   const ql = q.toLowerCase().trim()
-  let f = EXDB.filter(e =>
+  const all = allExercises(st)
+  let f = all.filter(e =>
     (bp === '★' ? usage[e.id] : (!bp || e.bp === bp)) &&
-    (!ql || e.n.includes(ql) || e.tg.includes(ql) || e.eq.includes(ql)))
+    (!ql || e.n.toLowerCase().includes(ql) || e.tg.includes(ql) || e.eq.includes(ql)))
   if (bp === '★') f = [...f].sort((a, b) => (usage[b.id] - usage[a.id]) || (a.n < b.n ? -1 : 1))
   const chosenCount = Object.keys(usage).length
   return <>
     <h3>{t('Add exercise')}</h3>
     <div className="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
-      <input className="input" placeholder={t('Search {0} exercises…', EXDB.length)} value={q} onChange={e => { setQ(e.target.value); setShown(50) }} /></div>
+      <input className="input" placeholder={t('Search {0} exercises…', all.length)} value={q} onChange={e => { setQ(e.target.value); setShown(50) }} /></div>
     <div className="chips" style={{ margin: '10px 0' }}>
       {chosenCount > 0 && <button className={'chip' + (bp === '★' ? ' on' : '')} onClick={() => { setBp('★'); setShown(50) }}>⭐ {t('Chosen')} ({chosenCount})</button>}
       <button className={'chip' + (!bp ? ' on' : '')} onClick={() => { setBp(''); setShown(50) }}>{t('All')}</button>
       {BODYPARTS.map(b => <button key={b} className={'chip' + (bp === b ? ' on' : '')} onClick={() => { setBp(b); setShown(50) }}>{t(b)}</button>)}
     </div>
     <div className="list">
+      {bp !== '★' && <div className="item" onClick={() => customExSheet(null, ex => onPick(ex), q.trim())}>
+        <div className="thumb thumb-x">✨</div>
+        <div className="grow"><div className="tt">{t('Create your own exercise')}</div><div className="ss">{t('name + body part, no animation')}</div></div><span className="chev">＋</span>
+      </div>}
       {f.slice(0, shown).map(e => <div key={e.id} className="item" onClick={() => onPick(e)}>
         <Thumb ex={e} /><div className="grow"><div className="tt">{e.n}</div><div className="ss">{t(e.tg || e.bp)} · {t(e.eq)}</div></div>
         {usage[e.id] && <span className="tag acc">⭐</span>}<span className="chev">+</span>
       </div>)}
-      {f.length === 0 && <div className="empty">{bp === '★' ? t('Nothing chosen yet — add exercises and they’ll show up here.') : t('No match 🤷')}</div>}
+      {f.length === 0 && bp === '★' && <div className="empty">{t('Nothing chosen yet — add exercises and they’ll show up here.')}</div>}
     </div>
     {f.length > shown && <><div style={{ height: 8 }} /><button className="btn" onClick={() => setShown(s => s + 50)}>{t('Show more')}</button></>}
   </>
@@ -336,7 +400,7 @@ function WorkoutDetail({ w, close }) {
       const ex = EXIDX[e.id]
       return <div key={i} className="row" style={{ marginBottom: 12, alignItems: 'flex-start' }}>
         {ex && <Thumb ex={ex} />}
-        <div className="grow"><div className="tt capitalize" style={{ fontWeight: 700 }}>{ex ? ex.n : e.id} {w.prs && w.prs.includes(e.id) && <span className="pr">🏆 PR</span>}</div>
+        <div className="grow"><div className="tt capitalize" style={{ fontWeight: 700 }}>{ex ? ex.n : (e.n || e.id)} {w.prs && w.prs.includes(e.id) && <span className="pr">🏆 PR</span>}</div>
           <div className="ss">{e.sets.filter(s => s.done).map(s => setLabel(e.id, s)).join('  ·  ') || t('no sets')}</div></div>
       </div>
     })}

@@ -308,5 +308,25 @@ export default {
   'rear deltoids': 'задние дельты', 'rhomboids': 'ромбовидные', 'rotator cuff': 'ротаторная манжета',
   'shins': 'голени', 'soleus': 'камбаловидная', 'sternocleidomastoid': 'грудино-ключично-сосцевидная',
   'trapezius': 'трапециевидная', 'upper chest': 'верх груди', 'wrist extensors': 'разгибатели запястья',
-  'wrist flexors': 'сгибатели запястья', 'wrists': 'запястья'
+  'wrist flexors': 'сгибатели запястья', 'wrists': 'запястья',
+
+  // --- custom exercises (#11) ---
+  'Create your own exercise': 'Создать своё упражнение',
+  'Edit custom exercise': 'Изменить своё упражнение',
+  'Name it and pick a body part — it behaves like any other exercise, just without an animation.': 'Задайте название и выберите часть тела — оно работает как любое другое упражнение, только без анимации.',
+  'Exercise name': 'Название упражнения',
+  'name + body part, no animation': 'название + часть тела, без анимации',
+  'Create exercise': 'Создать упражнение',
+  'Give it a name': 'Задайте название',
+  'Pick a body part': 'Выберите часть тела',
+  '“{0}” already exists': '«{0}» уже существует',
+  '“{0}” created ✓': '«{0}» создано ✓',
+  'Cardio exercises log time + speed instead of weight × reps.': 'Кардио-упражнения записывают время + скорость вместо веса × повторов.',
+  'custom': 'своё',
+  'Edit': 'Изменить',
+  'Saved ✓': 'Сохранено ✓',
+  'Delete “{0}”?': 'Удалить «{0}»?',
+  'It will be removed from your routines. Already-logged workouts keep their sets.': 'Оно будет убрано из ваших программ. Записанные тренировки сохранят свои подходы.',
+  'Exercise deleted': 'Упражнение удалено',
+  'Finish your current workout first': 'Сначала завершите текущую тренировку'
 }

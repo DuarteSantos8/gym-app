@@ -308,5 +308,25 @@ export default {
   'rear deltoids': '三角肌后束', 'rhomboids': '菱形肌', 'rotator cuff': '肩袖',
   'shins': '胫部', 'soleus': '比目鱼肌', 'sternocleidomastoid': '胸锁乳突肌',
   'trapezius': '斜方肌', 'upper chest': '上胸', 'wrist extensors': '腕伸肌',
-  'wrist flexors': '腕屈肌', 'wrists': '手腕'
+  'wrist flexors': '腕屈肌', 'wrists': '手腕',
+
+  // --- custom exercises (#11) ---
+  'Create your own exercise': '创建自己的动作',
+  'Edit custom exercise': '编辑自定义动作',
+  'Name it and pick a body part — it behaves like any other exercise, just without an animation.': '起个名字并选择身体部位——它和其他动作一样使用，只是没有动画。',
+  'Exercise name': '动作名称',
+  'name + body part, no animation': '名称 + 身体部位，无动画',
+  'Create exercise': '创建动作',
+  'Give it a name': '请输入名称',
+  'Pick a body part': '请选择身体部位',
+  '“{0}” already exists': '「{0}」已存在',
+  '“{0}” created ✓': '「{0}」已创建 ✓',
+  'Cardio exercises log time + speed instead of weight × reps.': '有氧动作记录时间 + 速度，而不是重量 × 次数。',
+  'custom': '自定义',
+  'Edit': '编辑',
+  'Saved ✓': '已保存 ✓',
+  'Delete “{0}”?': '删除「{0}」？',
+  'It will be removed from your routines. Already-logged workouts keep their sets.': '将从你的计划中移除。已记录的训练会保留其组数。',
+  'Exercise deleted': '动作已删除',
+  'Finish your current workout first': '请先完成当前训练'
 }

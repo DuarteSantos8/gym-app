@@ -308,5 +308,25 @@ export default {
   'rear deltoids': 'पीछे के डेल्टॉइड', 'rhomboids': 'रॉम्बॉइड', 'rotator cuff': 'रोटेटर कफ',
   'shins': 'पिंडली की हड्डी', 'soleus': 'सोलियस', 'sternocleidomastoid': 'स्टर्नोक्लाइडोमैस्टॉइड',
   'trapezius': 'ट्रेपेज़ियस', 'upper chest': 'ऊपरी छाती', 'wrist extensors': 'कलाई विस्तारक',
-  'wrist flexors': 'कलाई मोड़क', 'wrists': 'कलाइयाँ'
+  'wrist flexors': 'कलाई मोड़क', 'wrists': 'कलाइयाँ',
+
+  // --- custom exercises (#11) ---
+  'Create your own exercise': 'अपनी एक्सरसाइज़ बनाएं',
+  'Edit custom exercise': 'कस्टम एक्सरसाइज़ संपादित करें',
+  'Name it and pick a body part — it behaves like any other exercise, just without an animation.': 'नाम दें और बॉडी पार्ट चुनें — यह बाकी एक्सरसाइज़ की तरह ही काम करती है, बस एनिमेशन नहीं होता।',
+  'Exercise name': 'एक्सरसाइज़ का नाम',
+  'name + body part, no animation': 'नाम + बॉडी पार्ट, बिना एनिमेशन',
+  'Create exercise': 'एक्सरसाइज़ बनाएं',
+  'Give it a name': 'कोई नाम दें',
+  'Pick a body part': 'एक बॉडी पार्ट चुनें',
+  '“{0}” already exists': '“{0}” पहले से मौजूद है',
+  '“{0}” created ✓': '“{0}” बन गई ✓',
+  'Cardio exercises log time + speed instead of weight × reps.': 'कार्डियो एक्सरसाइज़ में वज़न × रेप्स की जगह समय + गति दर्ज होती है।',
+  'custom': 'कस्टम',
+  'Edit': 'संपादित करें',
+  'Saved ✓': 'सहेजा गया ✓',
+  'Delete “{0}”?': '“{0}” हटाएं?',
+  'It will be removed from your routines. Already-logged workouts keep their sets.': 'यह आपकी रूटीन से हट जाएगी। दर्ज की गई वर्कआउट में सेट बने रहेंगे।',
+  'Exercise deleted': 'एक्सरसाइज़ हटाई गई',
+  'Finish your current workout first': 'पहले चल रही वर्कआउट पूरी करें'
 }

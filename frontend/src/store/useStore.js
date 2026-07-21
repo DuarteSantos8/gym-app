@@ -1,13 +1,14 @@
 import { create } from 'zustand'
 import { api } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
+import { registerCustom } from '../lib/exercises.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
   unit: 'kg', restSec: 90, sound: true, lang: 'en',
   theme: 'dark', accent: 'lime', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
-  exWeights: {}, workouts: [], active: null,
+  exWeights: {}, workouts: [], active: null, customEx: [],
   reminder: { on: false, time: '08:00', tz: null }
 }
 const clone = o => JSON.parse(JSON.stringify(o))
@@ -27,6 +28,7 @@ export const useStore = create((set, get) => {
 
   const persist = (S, push = true) => {
     S._ts = Date.now()
+    registerCustom(S.customEx)
     localStorage.setItem(KEY, JSON.stringify(S))
     set({ S })
     if (push && get().user) {
@@ -46,7 +48,7 @@ export const useStore = create((set, get) => {
   })
 
   return {
-    S: loadState(),
+    S: (() => { const s = loadState(); registerCustom(s.customEx); return s })(),
     user: (() => { try { return JSON.parse(localStorage.getItem('gym_user')) || null } catch { return null } })(),
     ready: false,
 

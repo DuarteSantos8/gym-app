@@ -114,6 +114,7 @@ a{color:var(--acc)}
   border-radius:14px;padding:12px;min-height:60px}
 .item:active{background:var(--card2)}
 .thumb{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#fff;flex:none}
+.thumb-x{display:flex;align-items:center;justify-content:center;font-size:1.4rem;background:var(--bg2)}
 .item .tt{font-weight:600;font-size:.93rem;line-height:1.25;text-transform:capitalize}
 .item .ss{color:var(--mut);font-size:.78rem;margin-top:2px;text-transform:capitalize}
 .item .grow{flex:1;min-width:0}

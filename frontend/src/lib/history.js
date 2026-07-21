@@ -11,6 +11,12 @@ export function setLabel(id, s) {
 export function defaultConfig(id) {
   return isCardio(id) ? { sets: 1, min: 20, speed: 8 } : { sets: 3, reps: 10, weight: 0 }
 }
+// Drop superset ids that no longer have an adjacent partner (after unlink/reorder/remove).
+export function cleanupSg(ex) {
+  ex.forEach((e, i) => {
+    if (e.sg && !(ex[i - 1]?.sg === e.sg || ex[i + 1]?.sg === e.sg)) delete e.sg
+  })
+}
 
 export function lastEntryFor(S, exId) {
   for (let i = S.workouts.length - 1; i >= 0; i--) {

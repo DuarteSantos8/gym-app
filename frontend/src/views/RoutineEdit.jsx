@@ -4,16 +4,9 @@ import { useStore } from '../store/useStore.js'
 import { EXIDX, isCardio } from '../lib/exercises.js'
 import { fmtNum, uid } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
-import { supersetUnits } from '../lib/history.js'
+import { supersetUnits, cleanupSg } from '../lib/history.js'
 import { Thumb } from '../components/Media.jsx'
 import { emojiPicker, exercisePicker, exConfigSheet, confirmSheet } from '../sheets.jsx'
-
-// drop superset ids that no longer have an adjacent partner (after unlink/reorder)
-function cleanupSg(ex) {
-  ex.forEach((e, i) => {
-    if (e.sg && !(ex[i - 1]?.sg === e.sg || ex[i + 1]?.sg === e.sg)) delete e.sg
-  })
-}
 
 export default function RoutineEdit() {
   const nav = useNavigate()

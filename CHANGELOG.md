@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.3.0 — 2026-07-22
+
+Custom exercises — add movements that aren't in the catalogue. (#11)
+
+- ✨ **Create your own exercise** from the exercise picker or the Exercises tab: a name and a
+  body part is all it takes. Your search text is pre-filled as the name, so "no match" flows
+  straight into "create it".
+- 🏋️ Custom exercises behave like built-in ones everywhere — routines, supersets, workout
+  logging, weight suggestions, PRs, stats and history. The animation stays blank by design.
+- 🏃 Pick the *cardio* body part and it logs time + speed instead of weight × reps, like the
+  built-in cardio exercises.
+- ✏️ Edit (rename / change body part) or delete your custom exercises from their detail sheet.
+  Deleting removes them from your routines; already-logged workouts keep their sets and still
+  show the exercise name.
+- 🌍 Fully translated into all 12 UI languages, and synced to your profile like the rest of
+  your data.
+
 ## v1.1.3 — 2026-07-22
 
 - ⌨️ Weight and other numeric fields now accept a comma as decimal separator ("33,5") — iOS

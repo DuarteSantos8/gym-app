@@ -308,5 +308,25 @@ export default {
   'rear deltoids': 'deltoides posteriores', 'rhomboids': 'romboides', 'rotator cuff': 'coifa dos rotadores',
   'shins': 'canelas', 'soleus': 'solear', 'sternocleidomastoid': 'esternocleidomastóideo',
   'trapezius': 'trapézio', 'upper chest': 'peito superior', 'wrist extensors': 'extensores do punho',
-  'wrist flexors': 'flexores do punho', 'wrists': 'punhos'
+  'wrist flexors': 'flexores do punho', 'wrists': 'punhos',
+
+  // --- custom exercises (#11) ---
+  'Create your own exercise': 'Cria o teu próprio exercício',
+  'Edit custom exercise': 'Editar exercício personalizado',
+  'Name it and pick a body part — it behaves like any other exercise, just without an animation.': 'Dá-lhe um nome e escolhe uma parte do corpo — funciona como qualquer outro exercício, só que sem animação.',
+  'Exercise name': 'Nome do exercício',
+  'name + body part, no animation': 'nome + parte do corpo, sem animação',
+  'Create exercise': 'Criar exercício',
+  'Give it a name': 'Dá-lhe um nome',
+  'Pick a body part': 'Escolhe uma parte do corpo',
+  '“{0}” already exists': '«{0}» já existe',
+  '“{0}” created ✓': '«{0}» criado ✓',
+  'Cardio exercises log time + speed instead of weight × reps.': 'Exercícios de cardio registam tempo + velocidade em vez de peso × reps.',
+  'custom': 'próprio',
+  'Edit': 'Editar',
+  'Saved ✓': 'Guardado ✓',
+  'Delete “{0}”?': 'Eliminar «{0}»?',
+  'It will be removed from your routines. Already-logged workouts keep their sets.': 'Será removido das tuas rotinas. Os treinos já registados mantêm as suas séries.',
+  'Exercise deleted': 'Exercício eliminado',
+  'Finish your current workout first': 'Termina primeiro o treino atual'
 }

@@ -308,5 +308,25 @@ export default {
   'rear deltoids': 'arka omuz', 'rhomboids': 'romboidler', 'rotator cuff': 'rotator manşet',
   'shins': 'kaval kemikleri', 'soleus': 'soleus', 'sternocleidomastoid': 'boyun kası',
   'trapezius': 'trapez', 'upper chest': 'üst göğüs', 'wrist extensors': 'bilek ekstansörleri',
-  'wrist flexors': 'bilek fleksörleri', 'wrists': 'bilekler'
+  'wrist flexors': 'bilek fleksörleri', 'wrists': 'bilekler',
+
+  // --- custom exercises (#11) ---
+  'Create your own exercise': 'Kendi egzersizini oluştur',
+  'Edit custom exercise': 'Özel egzersizi düzenle',
+  'Name it and pick a body part — it behaves like any other exercise, just without an animation.': 'Bir ad ver ve bölge seç — animasyon dışında diğer egzersizler gibi çalışır.',
+  'Exercise name': 'Egzersiz adı',
+  'name + body part, no animation': 'ad + vücut bölgesi, animasyonsuz',
+  'Create exercise': 'Egzersiz oluştur',
+  'Give it a name': 'Bir ad ver',
+  'Pick a body part': 'Bir vücut bölgesi seç',
+  '“{0}” already exists': '“{0}” zaten var',
+  '“{0}” created ✓': '“{0}” oluşturuldu ✓',
+  'Cardio exercises log time + speed instead of weight × reps.': 'Kardiyo egzersizleri ağırlık × tekrar yerine süre + hız kaydeder.',
+  'custom': 'özel',
+  'Edit': 'Düzenle',
+  'Saved ✓': 'Kaydedildi ✓',
+  'Delete “{0}”?': '“{0}” silinsin mi?',
+  'It will be removed from your routines. Already-logged workouts keep their sets.': 'Rutinlerinden kaldırılacak. Kayıtlı antrenmanlar setlerini korur.',
+  'Exercise deleted': 'Egzersiz silindi',
+  'Finish your current workout first': 'Önce mevcut antrenmanını bitir'
 }

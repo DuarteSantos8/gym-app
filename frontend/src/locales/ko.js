@@ -308,5 +308,25 @@ export default {
   'rear deltoids': '후면 삼각근', 'rhomboids': '능형근', 'rotator cuff': '회전근개',
   'shins': '정강이', 'soleus': '가자미근', 'sternocleidomastoid': '흉쇄유돌근',
   'trapezius': '승모근', 'upper chest': '윗가슴', 'wrist extensors': '손목 신전근',
-  'wrist flexors': '손목 굴곡근', 'wrists': '손목'
+  'wrist flexors': '손목 굴곡근', 'wrists': '손목',
+
+  // --- custom exercises (#11) ---
+  'Create your own exercise': '나만의 운동 만들기',
+  'Edit custom exercise': '커스텀 운동 편집',
+  'Name it and pick a body part — it behaves like any other exercise, just without an animation.': '이름을 정하고 부위를 선택하세요 — 애니메이션만 없을 뿐 다른 운동과 똑같이 사용됩니다.',
+  'Exercise name': '운동 이름',
+  'name + body part, no animation': '이름 + 부위, 애니메이션 없음',
+  'Create exercise': '운동 만들기',
+  'Give it a name': '이름을 입력하세요',
+  'Pick a body part': '부위를 선택하세요',
+  '“{0}” already exists': '“{0}”은(는) 이미 있습니다',
+  '“{0}” created ✓': '“{0}” 생성됨 ✓',
+  'Cardio exercises log time + speed instead of weight × reps.': '유산소 운동은 무게 × 횟수 대신 시간 + 속도를 기록합니다.',
+  'custom': '커스텀',
+  'Edit': '편집',
+  'Saved ✓': '저장됨 ✓',
+  'Delete “{0}”?': '“{0}” 삭제할까요?',
+  'It will be removed from your routines. Already-logged workouts keep their sets.': '루틴에서 제거됩니다. 이미 기록된 운동은 세트를 유지합니다.',
+  'Exercise deleted': '운동 삭제됨',
+  'Finish your current workout first': '진행 중인 운동을 먼저 마치세요'
 }
