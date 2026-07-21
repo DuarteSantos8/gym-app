@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.1.1 — 2026-07-21
+
+Reliability fixes for the push notifications shipped in v1.1.0, found through live testing:
+
+- 🌍 Workout day reminder now fires by each user's own browser-detected timezone instead of a
+  single server-wide one — works correctly regardless of where the server runs, and follows you
+  automatically if you travel.
+- 💾 Settings changes (like the reminder time) are flushed to the server immediately when the tab
+  backgrounds or closes, instead of relying solely on a 1.5s debounce that could get cut short.
+- ⏱️ Reminder check tightened from a 60s to a 10s interval, and pushes are now marked
+  `urgency: 'high'` — cuts avoidable delay on top of it, though delivery time is ultimately up to
+  Apple/Google's push relay.
+- 🪵 Push send failures are now logged instead of silently swallowed.
+
 ## v1.1.0 — 2026-07-21
 
 - 🐳 Prebuilt Docker images published to `ghcr.io/duartesantos8/opengym-{api,web}` (amd64 + arm64)
