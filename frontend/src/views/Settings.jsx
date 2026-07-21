@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, DEF, hasData } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
-import { ACCENTS, todayISO } from '../lib/format.js'
+import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { loadStarterPlan, confirmSheet } from '../sheets.jsx'
@@ -136,14 +136,17 @@ function NotificationsCard({ S, update, toast }) {
       {on && <>
         <div className="row between" style={{ padding: '8px 0' }}>
           <span>Workout day reminder</span>
-          <button className={'chip' + (S.reminder?.on ? ' on' : '')} onClick={() => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: !s.reminder?.on } })}>{S.reminder?.on ? 'On' : 'Off'}</button>
+          <button className={'chip' + (S.reminder?.on ? ' on' : '')} onClick={() => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), on: !s.reminder?.on, tz: localTZ() } })}>{S.reminder?.on ? 'On' : 'Off'}</button>
         </div>
         {S.reminder?.on && <div className="row between" style={{ padding: '8px 0' }}>
           <span>Reminder time</span>
           <input type="time" className="input" style={{ width: 120 }} value={S.reminder?.time || DEF.reminder.time}
-            onChange={e => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), time: e.target.value } })} />
+            onChange={e => update(s => { s.reminder = { ...(s.reminder || DEF.reminder), time: e.target.value, tz: localTZ() } })} />
         </div>}
-        <div className="small dim" style={{ margin: '6px 0' }}>Only sent on days you have a routine planned and haven't logged a workout yet.</div>
+        <div className="small dim" style={{ margin: '6px 0' }}>
+          Only sent on days you have a routine planned and haven't logged a workout yet.
+          {S.reminder?.on && S.reminder?.tz && <> Timezone: {S.reminder.tz} (auto-detected, updates if you travel).</>}
+        </div>
         <button className="btn sm" onClick={test}>Send test notification</button>
       </>}
     </>}

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { api } from '../lib/api.js'
+import { localTZ } from '../lib/format.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -7,7 +8,7 @@ export const DEF = {
   theme: 'dark', accent: 'lime', targetW: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
   exWeights: {}, workouts: [], active: null,
-  reminder: { on: false, time: '08:00' }
+  reminder: { on: false, time: '08:00', tz: null }
 }
 const clone = o => JSON.parse(JSON.stringify(o))
 
@@ -91,6 +92,12 @@ export const useStore = create((set, get) => {
         const me = await api('/api/me')
         get().setUser(me.user)
         await get().pullState()
+        // Re-stamp the reminder's timezone on every load — keeps it correct if you're travelling,
+        // without needing to revisit Settings.
+        const tz = localTZ()
+        if (get().S.reminder?.on && get().S.reminder.tz !== tz) {
+          get().update(s => { s.reminder = { ...s.reminder, tz } })
+        }
       } catch (e) {
         if (e.status === 401) get().setUser(null)
       }

@@ -31,5 +31,7 @@ export function weekKey(d) {
   return dt.getFullYear() + '-' + week
 }
 
+export const localTZ = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' } catch { return 'UTC' } }
+
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 export const ACCENTS = { lime: '#a3e635', sky: '#38bdf8', orange: '#fb923c', violet: '#a78bfa', pink: '#f472b6', red: '#f87171', teal: '#2dd4bf', gold: '#fbbf24' }

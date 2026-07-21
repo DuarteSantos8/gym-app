@@ -92,24 +92,31 @@ function effectiveRoutineId(S, iso) {
   const wd = new Date(iso + 'T12:00:00').getDay();
   return S.week?.[wd] || null;
 }
-const todayISO = () => {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-};
+// Computes "now" in an arbitrary IANA zone (e.g. "Europe/Lisbon") instead of the server's own —
+// each user's reminder fires by their own clock, wherever they and their phone actually are.
+function userNow(tz) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    }).formatToParts(new Date());
+    const g = t => parts.find(p => p.type === t)?.value;
+    return { date: `${g('year')}-${g('month')}-${g('day')}`, hhmm: `${g('hour')}:${g('minute')}` };
+  } catch { return null; } // unknown/invalid tz string — skip this user rather than guess
+}
 setInterval(() => {
-  const now = new Date();
-  const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-  const today = todayISO();
   for (const user of db.users) {
-    if (user.lastReminder === today) continue;
     if (!db.subs.some(s => s.userId === user.id)) continue;
     const S = readState(user.id);
-    if (!S?.reminder?.on || S.reminder.time !== hhmm) continue;
-    if ((S.workouts || []).some(w => w.d === today)) continue;
-    const rid = effectiveRoutineId(S, today);
+    if (!S?.reminder?.on) continue;
+    const now = userNow(S.reminder.tz || 'UTC');
+    if (!now || S.reminder.time !== now.hhmm) continue;
+    if (user.lastReminder === now.date) continue;
+    if ((S.workouts || []).some(w => w.d === now.date)) continue;
+    const rid = effectiveRoutineId(S, now.date);
     if (!rid) continue; // rest day — nothing planned
     const routine = (S.routines || []).find(r => r.id === rid);
-    user.lastReminder = today;
+    user.lastReminder = now.date;
     saveDb();
     sendPush(user.id, {
       title: routine ? `${routine.emoji || '🏋️'} ${routine.name} today` : 'Workout planned today',
