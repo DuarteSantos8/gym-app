@@ -19,6 +19,7 @@ const rel = ts => {
   if (s < 86400) return Math.floor(s / 3600) + 'h ago'
   return Math.floor(s / 86400) + 'd ago'
 }
+const dur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m < 60 ? m + 'm' : Math.floor(m / 60) + 'h' + (m % 60) + 'm' }
 
 function UserDetail({ id, onChanged, close }) {
   const [d, setD] = useState(null)
@@ -96,10 +97,12 @@ export default function Admin() {
 
   const loadUsers = () => api('/api/admin/users').then(d => { setUsers(d.users); setInviteOnly(d.invite_only) }).catch(e => toast(e.message || 'Failed to load'))
   const loadInvites = () => api('/api/admin/invites').then(d => setInvites(d.invites)).catch(() => {})
-  useEffect(() => { if (user?.admin) { loadUsers(); loadInvites() } }, [])
+  // poll every 15s so the "training now" section stays live without a manual refresh
+  useEffect(() => { if (!user?.admin) return; loadUsers(); loadInvites(); const iv = setInterval(loadUsers, 15000); return () => clearInterval(iv) }, [])
   if (!user?.admin) return null
 
   const openUser = id => openSheet(close => <UserDetail id={id} onChanged={loadUsers} close={close} />)
+  const liveUsers = (users || []).filter(u => u.live)
   const activeCount = (users || []).filter(u => u.lastSync && Date.now() - u.lastSync < 7 * 86400000).length
   const disabledCount = (users || []).filter(u => u.disabled).length
 
@@ -113,18 +116,27 @@ export default function Admin() {
 
     <div className="tiles" style={{ marginBottom: 12 }}>
       <div className="tile"><div className="l">Users</div><div className="v">{users ? users.length : '—'}</div></div>
+      <div className="tile"><div className="l">Training now</div><div className="v" style={{ color: liveUsers.length ? 'var(--acc)' : undefined }}>{users ? liveUsers.length : '—'}</div></div>
       <div className="tile"><div className="l">Active 7d</div><div className="v">{users ? activeCount : '—'}</div></div>
       <div className="tile"><div className="l">Disabled</div><div className="v">{users ? disabledCount : '—'}</div></div>
-      <div className="tile"><div className="l">Signup</div><div className="v" style={{ fontSize: '.95rem' }}>{inviteOnly ? 'invite' : 'open'}</div></div>
     </div>
+
+    {liveUsers.length > 0 && <div className="card" style={{ borderColor: 'var(--acc)' }}>
+      <h2 style={{ margin: '0 0 8px' }}>🟢 Training now</h2>
+      {liveUsers.map(u => <div key={u.id} className="row between" style={{ padding: '8px 2px', borderBottom: '1px solid var(--bg2)' }} onClick={() => openUser(u.id)}>
+        <div><div className="small" style={{ fontWeight: 700 }}>{u.name}</div>
+          <div className="dim" style={{ fontSize: '.72rem' }}>{u.live.name} · ex {u.live.exIdx}/{u.live.exTotal} · {u.live.setsDone}/{u.live.setsTotal} sets</div></div>
+        <span className="tag acc">{dur(Date.now() - u.live.startedAt)}</span>
+      </div>)}
+    </div>}
 
     <InvitesCard invites={invites} reload={loadInvites} />
 
     <h4 className="sec">Users</h4>
     <div className="list">
       {(users || []).map(u => <div key={u.id} className="item" onClick={() => openUser(u.id)} style={u.disabled ? { opacity: .55 } : null}>
-        <div className="grow"><div className="tt">{u.name} {u.admin && <span className="tag acc" style={{ marginLeft: 4 }}>admin</span>}{u.disabled && <span className="tag" style={{ marginLeft: 4, color: 'var(--red)' }}>off</span>}</div>
-          <div className="ss">{u.workouts} workouts{u.lastWorkout ? ' · last ' + fmtDate(u.lastWorkout) : ''} · synced {rel(u.lastSync)}</div></div>
+        <div className="grow"><div className="tt">{u.live && '🟢 '}{u.name} {u.admin && <span className="tag acc" style={{ marginLeft: 4 }}>admin</span>}{u.disabled && <span className="tag" style={{ marginLeft: 4, color: 'var(--red)' }}>off</span>}</div>
+          <div className="ss">{u.live ? 'training now · ' + u.live.name : u.workouts + ' workouts' + (u.lastWorkout ? ' · last ' + fmtDate(u.lastWorkout) : '') + ' · synced ' + rel(u.lastSync)}</div></div>
         {u.hasPush && <span title="push enabled">🔔</span>}<span className="chev">›</span>
       </div>)}
       {users && !users.length && <div className="empty">No users yet.</div>}

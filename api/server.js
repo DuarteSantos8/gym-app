@@ -223,6 +223,19 @@ function readBody(req) {
 }
 const b64uToBuf = s => Buffer.from(s, 'base64url');
 
+/* ---------- live presence (in-memory) ---------- */
+// Clients heartbeat /api/activity while a workout is on screen; the admin dashboard reads who's
+// live. Purely ephemeral — never persisted. Expires shortly after the last ping.
+const presence = new Map();               // uid -> { name, exIdx, exTotal, setsDone, setsTotal, startedAt, updatedAt }
+const PRESENCE_TTL = 70000;               // ~3.5× the 20s client heartbeat
+function livePresence(uid) {
+  const p = presence.get(uid);
+  if (!p) return null;
+  if (Date.now() - p.updatedAt > PRESENCE_TTL) { presence.delete(uid); return null; }
+  return p;
+}
+setInterval(() => { for (const [k, v] of presence) if (Date.now() - v.updatedAt > PRESENCE_TTL) presence.delete(k); }, 30000).unref();
+
 /* ---------- routes ---------- */
 const routes = {
   'GET /api/health': async (req, res) => json(res, 200, { ok: true, users: db.users.length }),
@@ -398,6 +411,23 @@ const routes = {
     json(res, 200, { ok: true });
   },
 
+  // Live-workout heartbeat: client pings while a workout is on screen; { active:false } drops it.
+  'POST /api/activity': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    if (body.active) {
+      presence.set(user.id, {
+        name: String(body.name || '').slice(0, 60),
+        exIdx: +body.exIdx || 0, exTotal: +body.exTotal || 0,
+        setsDone: +body.setsDone || 0, setsTotal: +body.setsTotal || 0,
+        startedAt: +body.startedAt || Date.now(),
+        updatedAt: Date.now()
+      });
+    } else presence.delete(user.id);
+    json(res, 200, { ok: true });
+  },
+
   /* ---------- admin dashboard ---------- */
   // One row per user, cheap enough for a personal instance (reads each state file once).
   'GET /api/admin/users': async (req, res) => {
@@ -412,10 +442,11 @@ const routes = {
         workouts: workouts.length,
         lastWorkout: last ? last.d : null,
         lastSync: S._ts || null,
-        hasPush: db.subs.some(s => s.userId === u.id)
+        hasPush: db.subs.some(s => s.userId === u.id),
+        live: livePresence(u.id)
       };
     });
-    json(res, 200, { users, invite_only: INVITE_ONLY });
+    json(res, 200, { users, invite_only: INVITE_ONLY, now: Date.now() });
   },
 
   // Drill-down: full workout history + body-weight log for one user.
@@ -442,6 +473,7 @@ const routes = {
     if (!u) return json(res, 404, { error: 'no such user' });
     if (isAdmin(u)) return json(res, 400, { error: 'cannot disable an admin' });
     u.disabled = !!body.disabled;
+    if (u.disabled) presence.delete(u.id);   // drop them off "training now" at once
     saveDb();
     json(res, 200, { ok: true, id: u.id, disabled: u.disabled });
   },

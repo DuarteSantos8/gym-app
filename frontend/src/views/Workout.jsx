@@ -7,6 +7,7 @@ import { effectiveRoutine, lastEntryFor, bestWeightFor, buildSets, setsDoneActiv
 import { fmtNum, fmtDate, todayISO, DAYN } from '../lib/format.js'
 import { beep, vibrate } from '../lib/sound.js'
 import { t } from '../lib/i18n.js'
+import { api } from '../lib/api.js'
 import Media from '../components/Media.jsx'
 import NumField from '../components/NumField.jsx'
 import { startFlow, exercisePicker, exConfigSheet, exerciseDetailSheet, topWeightSheet, finishWorkout, workoutCompleteSheet, confirmSheet } from '../sheets.jsx'
@@ -146,6 +147,33 @@ function ActiveWorkout() {
     else if (workoutDone) workoutCompleteSheet()
     else if (exJustDone && cardioEntry) useUI.getState().toast(t('Cardio logged 🏃'))
   }
+
+  // Live-presence heartbeat so the admin dashboard can show who's training now. Signed-in only —
+  // guests have no server session. Reads fresh state each tick so progress stays current.
+  useEffect(() => {
+    if (!useStore.getState().user) return
+    let stopped = false
+    const ping = active => {
+      const A2 = useStore.getState().S.active
+      if (!A2) return
+      const u = supersetUnits(A2.entries)
+      const c = Math.min(A2.cur, Math.max(0, A2.entries.length - 1))
+      const ui = u.findIndex(x => x.includes(c))
+      const tot = A2.entries.reduce((n, e) => n + e.sets.length, 0)
+      api('/api/activity', { method: 'POST', body: JSON.stringify({
+        active, name: A2.name, exIdx: ui + 1, exTotal: u.length,
+        setsDone: setsDoneActive(A2), setsTotal: tot, startedAt: A2.start
+      }) }).catch(() => {})
+    }
+    ping(true)
+    const iv = setInterval(() => { if (!stopped) ping(true) }, 20000)
+    return () => {
+      stopped = true; clearInterval(iv)
+      // best-effort "left" signal: sendBeacon survives a tab close, fetch covers in-app nav
+      try { navigator.sendBeacon?.('/api/activity', new Blob([JSON.stringify({ active: false })], { type: 'application/json' })) } catch { /* */ }
+      api('/api/activity', { method: 'POST', body: JSON.stringify({ active: false }) }).catch(() => {})
+    }
+  }, [])
 
   return <div className="narrow">
     <div className="hdr">

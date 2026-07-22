@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.1.4 — 2026-07-22
+
+Admin dashboard for self-hosters (opt-in — off by default).
+
+- 🛠️ **Admin dashboard** (Settings → Admin dashboard) for whoever runs the instance: a users
+  overview with workout counts and last-active times, plus a per-user drill-down into their full
+  workout history and body-weight log.
+- 🟢 **Live "training now"** — see who's mid-workout in real time, with their current exercise and
+  set progress, updated by a lightweight heartbeat while a workout is on screen.
+- 🚫 **Disable / enable accounts** — a disabled account is signed out and locked out everywhere
+  until you re-enable it.
+- 🔑 **Invite-only signup** (optional) — require an invite code to create a profile; generate and
+  revoke codes from the dashboard. Existing accounts are unaffected.
+- ⚙️ Configured via environment: `ADMIN_UIDS` (comma-separated user ids who are admins) and
+  `INVITE_ONLY=1`; both default off, so a fresh instance stays open with no admin. See
+  `.env.example`. Admin access is gated by your passkey and enforced server-side.
+
 ## v1.1.3 — 2026-07-22
 
 - 🔎 **Minimize the exercise animation during a workout** (#12). A ⤡ Minimize / ⤢ Expand button
