@@ -73,6 +73,7 @@ as a home-screen app, passkey sign-in, offline support, sync across your phone a
 - 🌍 **12 languages** — full UI translation (EN, DE, ES, FR, IT, PT, PL, TR, RU, ZH, KO, HI); exercise instructions localized in 10 of them, loaded on demand so the app stays fast
 - 📥 **Bring your history with you** — import from **FitNotes** (Android and iOS), **Strong** and **Hevy**, or body weight straight out of an **Apple Health** export. Exercise names are matched against the library and anything unrecognised becomes one of your own exercises, so nothing in the file is dropped
 - 📦 **Yours to keep** — one-tap JSON export/import, guest mode, **no telemetry**
+- 📱 **Standalone Android app** — the whole tracker as a sideloadable APK: no account, no server, data on the phone, native workout reminders ([download](https://opengym.duarte-santos.ch))
 
 ## Quick start (self-host)
 
@@ -96,11 +97,16 @@ a build step locally either way.
 
 ## Mobile app (no server at all)
 
-The same codebase also builds a **standalone iPhone / Android app** (Capacitor): no account,
-no sync, no backend — everything stays on the phone, with native workout-day reminders and
-share-sheet backups. Self-hosting gets you multi-device sync and profiles for friends &
-family; the mobile app is the install-and-done flavor. Build it yourself from
-**[docs/MOBILE.md](docs/MOBILE.md)** — store listings are on the roadmap.
+The same codebase also builds a **standalone mobile app** (Capacitor): no account, no sync,
+no backend — everything stays on the phone, with native workout-day reminders and share-sheet
+backups. Self-hosting gets you multi-device sync and profiles for friends & family; the
+mobile app is the install-and-done flavor.
+
+- **Android:** [**download the APK**](https://opengym.duarte-santos.ch) and sideload it —
+  openGym is deliberately not on the Play Store. Or build it yourself: **[docs/MOBILE.md](docs/MOBILE.md)**.
+- **iPhone:** Apple doesn't allow installing apps outside the App Store, so there is no iOS
+  download. Self-host and add it to your home screen from Safari (it's a full PWA), or build
+  the native app onto your own device from Xcode — see **[docs/MOBILE.md](docs/MOBILE.md)**.
 
 ## How it works
 
@@ -147,7 +153,7 @@ Push notification keys are generated on first run and saved to `./data/vapid.jso
 
 Rough, community-driven — ideas and PRs welcome:
 
-- [x] Standalone mobile app — built from this repo today (see docs/MOBILE.md); App Store / Play Store listings pending
+- [x] Standalone mobile app — Android APK to sideload ([download](https://opengym.duarte-santos.ch)); on iOS as a self-hosted PWA (no store listings planned)
 - [ ] More starter plans (upper/lower, full-body, 5×5)
 - [x] Importers from FitNotes / Strong / Hevy, and body weight from Apple Health
 - [ ] Body measurements (waist, arms…) alongside weight

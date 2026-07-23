@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## v1.2.2 — 2026-07-23
+
+One codebase, two flavors: openGym is now also a standalone mobile app — and it ships as a
+direct APK download, not through app stores.
 
 - 📱 **Standalone mobile app.** The same frontend now also builds as a native iPhone /
   Android app (Capacitor) — the install-and-done flavor of openGym: no account, no server,
@@ -13,6 +16,12 @@
   - Exercise images/animations load from the same CDN as the live demo.
   - `npm run build:mobile`, then open `android/` in Android Studio or `ios/` in Xcode —
     see **docs/MOBILE.md**. `NOTICE.md` now carries an AGPL §7 app-store exception.
+- 🤖 **Android APK, no Play Store.** The official build is a signed, sideloadable APK
+  (~4.5 MB) from [opengym.duarte-santos.ch](https://opengym.duarte-santos.ch) — deliberately
+  store-free. docs/MOBILE.md covers building and signing your own.
+- 🍎 **iOS reality check.** Apple permits no installs outside the App Store, so there is no
+  iOS download; the docs explain the free options (self-hosted PWA on the home screen, or
+  running the native app onto your own iPhone from Xcode).
 
 - 📥 **Import your history from another app.** Settings → Data → *Import from another app*
   reads an export from **FitNotes** (both the Android and the FitNotes 2 iOS format),
