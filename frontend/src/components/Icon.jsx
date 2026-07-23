@@ -50,9 +50,14 @@ const P = {
   // Named after the split or the kit, because that's how people name routines
   // ("Push Day", "Leg Day", "Kettlebell") — an award icon says nothing about it.
   arm: <><circle cx="7" cy="5.8" r="1.9" /><path d="M7 8.8v4.6l-1.2 6.2M7 11.4l4.4 1.9" /><rect x="12.2" y="10.8" width="2.3" height="5" rx=".9" /><rect x="15.9" y="10.8" width="2.3" height="5" rx=".9" /><path d="M14.5 13.3h1.4" /></>,
-  abs: <><path d="M7.8 4.4h8.4v10.4a4.2 4.2 0 0 1-8.4 0Z" /><path d="M12 5.4v12M8.2 9h7.6M8.6 12.7h6.8" /></>,
+  // Six-pack, not a grid: the centre seam runs down the gap between the crease
+  // pairs and every crease stops short of the outline, so no stroke crosses another
+  // (the old version drew full-width lines through a centre line — a see-through #).
+  abs: <><path d="M7.8 4.4h8.4v10.4a4.2 4.2 0 0 1-8.4 0Z" /><path d="M12 6.2v9M9 8.9h2.2M12.8 8.9h2.2M9 11.6h2.2M12.8 11.6h2.2M9.3 14.2h1.9M12.9 14.2h1.9" /></>,
   legs: <><path d="M8.4 4.2h7.2" /><path d="M9.9 4.2v4.9l-1.3 4.4.9 6.3M14.1 4.2v4.9l1.3 4.4-.9 6.3" /><path d="M7.7 19.8h2.6M13.7 19.8h2.6" /></>,
-  pullup: <><path d="M3.6 5.1h16.8M8.5 5.5v2.3M15.5 5.5v2.3" /><circle cx="12" cy="10.5" r="1.9" /><path d="m8.5 7.8 3.5 5 3.5-5M12 13.3v3.9M12 17.2l-2.1 3.2M12 17.2l2.1 3.2" /></>,
+  // Head lifted clear of the arm-V apex (was cy 10.5, right where the arm strokes
+  // meet) so the body no longer reads as tangled lines behind a transparent head.
+  pullup: <><path d="M3.6 5.1h16.8M8.5 5.5v2.3M15.5 5.5v2.3" /><circle cx="12" cy="9.6" r="1.8" /><path d="m8.5 7.8 3.5 5 3.5-5M12 13.3v3.9M12 17.2l-2.1 3.2M12 17.2l2.1 3.2" /></>,
   kettlebell: <><path d="M9.5 11V9.6a2.5 2.5 0 0 1 5 0V11" /><path d="M14.9 11.8c2.2 1.5 3.6 3.9 3.6 6.4a1.6 1.6 0 0 1-1.6 1.6H7.1a1.6 1.6 0 0 1-1.6-1.6c0-2.5 1.4-4.9 3.6-6.4Z" /></>,
   plate: <><circle cx="12" cy="12" r="8.2" /><circle cx="12" cy="12" r="2.7" /></>,
   machine: <><path d="M12 3.6v3.1" /><rect x="6.6" y="6.7" width="10.8" height="12.9" rx="1.9" /><path d="M9 10.1h6M9 13.2h6M9 16.3h6" /></>,
