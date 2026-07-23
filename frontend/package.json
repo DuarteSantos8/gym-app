@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@capacitor/android": "^7.6.8",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.6.8",
     "@capacitor/ios": "^7.6.8",
     "@vitejs/plugin-react": "^6.0.3",
