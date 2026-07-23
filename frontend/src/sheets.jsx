@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store/useStore.js'
 import { useUI } from './store/useUI.js'
 import { EXDB, EXIDX, BODYPARTS, isCardio, allExercises, equipmentOf } from './lib/exercises.js'
@@ -11,11 +11,13 @@ import { starterRoutines } from './lib/starter.js'
 import Media, { Thumb } from './components/Media.jsx'
 import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
-import { Button, Slider } from './components/ui.jsx'
+import { Button, Slider, Switch } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
 import BodyMap from './components/BodyMap.jsx'
 import { loadOfWorkouts } from './lib/muscles.js'
 import { parseImport, mergeImport } from './lib/import-csv.js'
+import { buildPlanBundle, parsePlan, mergePlan, printPlan } from './lib/plan-share.js'
+import { MOBILE, shareExport } from './lib/mobile.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -465,6 +467,78 @@ export const glyphPicker = (current, onPick) => {
     ))}
     <div style={{ height: 4 }} />
   </>)
+}
+
+/* ============================ share / print / import a plan ============================ */
+export const planToolsSheet = () => ui().openSheet(close => <PlanTools close={close} />)
+
+function PlanTools({ close }) {
+  const st = useStore(s => s.S)
+  const user = useStore(s => s.user)
+  const fileRef = useRef(null)
+  const hasRoutines = (st.routines || []).some(r => r.ex && r.ex.length)
+
+  const exportFile = async () => {
+    const bundle = buildPlanBundle(st, user?.name ? t('{0}’s plan', user.name) : '')
+    const json = JSON.stringify(bundle, null, 2)
+    const name = 'opengym-plan-' + todayISO() + '.json'
+    if (MOBILE) { try { await shareExport(json, name) } catch (e) { /* dismissed */ } close(); return }
+    const blob = new Blob([json], { type: 'application/json' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); URL.revokeObjectURL(a.href)
+    close(); toast(t('Plan file saved — send it to a friend'))
+  }
+  const pickFile = ev => {
+    const f = ev.target.files[0]; ev.target.value = ''; if (!f) return
+    const rd = new FileReader()
+    rd.onload = () => {
+      try { const bundle = parsePlan(rd.result); close(); planImportSheet(bundle) }
+      catch (e) { toast(t('Import failed: {0}', e.message)) }
+    }
+    rd.readAsText(f)
+  }
+
+  return <>
+    <h3>{t('Share your plan')}</h3>
+    <div className="muted small" style={{ marginBottom: 16 }}>{t('Send your routines to a friend, or put your week on paper.')}</div>
+    <Button variant="primary" icon="upload" onClick={exportFile} disabled={!hasRoutines}>{t('Export plan file')}</Button>
+    <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A small file a friend imports into their own openGym — routines only, none of your workouts or weigh-ins.')}</div>
+    {!MOBILE && <>
+      <div style={{ height: 12 }} />
+      <Button variant="tinted" icon="download" onClick={() => { close(); printPlan(st, user?.name || '') }} disabled={!hasRoutines}>{t('Print / Save as PDF')}</Button>
+      <div className="dim small" style={{ margin: '7px 2px 0', lineHeight: 1.4 }}>{t('A clean one-page-per-plan printout — no exercise ever splits across a page.')}</div>
+    </>}
+    {!hasRoutines && <div className="dim small" style={{ margin: '12px 2px 0' }}>{t('Add an exercise to a routine first — an empty plan has nothing to share.')}</div>}
+    <h4 className="sec">{t('Got a plan from a friend?')}</h4>
+    <Button variant="ghost" icon="folder" onClick={() => fileRef.current?.click()}>{t('Import a plan file')}</Button>
+    <input ref={fileRef} type="file" accept="application/json,.json" onChange={pickFile} hidden />
+  </>
+}
+
+export const planImportSheet = bundle => ui().openSheet(close => <PlanImport bundle={bundle} close={close} />)
+
+function PlanImport({ bundle, close }) {
+  const [schedule, setSchedule] = useState(false)
+  const apply = () => {
+    update(s => mergePlan(s, bundle, { schedule }))
+    close()
+    toast(t('Added {0} routines to your plan', bundle.routineCount))
+    nav('/plan')
+  }
+  return <>
+    <h3>{bundle.name ? t('Import “{0}”', bundle.name) : t('Import this plan')}</h3>
+    <div className="muted small" style={{ marginBottom: 14 }}>
+      {t('{0} routines · {1} exercises', bundle.routineCount, bundle.exerciseCount)}
+      {bundle.scheduledDays > 0 ? ' · ' + t('scheduled on {0} days', bundle.scheduledDays) : ''}
+    </div>
+    <div className="dim small" style={{ marginBottom: 14, lineHeight: 1.4 }}>{t('These are added as new routines — nothing you already have is changed.')}</div>
+    {bundle.scheduledDays > 0 && <div className="row between" style={{ padding: '10px 2px', borderTop: '1px solid var(--sep)', borderBottom: '1px solid var(--sep)', marginBottom: 16, gap: 12 }}>
+      <div><div className="tt" style={{ fontSize: 15 }}>{t('Use this weekly schedule')}</div><div className="small dim">{t('Replaces your current Mon–Sun assignments.')}</div></div>
+      <Switch checked={schedule} onChange={setSchedule} />
+    </div>}
+    <Button variant="primary" onClick={apply}>{t('Add to my plan')}</Button>
+    <div style={{ height: 8 }} />
+    <Button variant="ghost" className="dim" onClick={close}>{t('Cancel')}</Button>
+  </>
 }
 
 /* ============================ day override / assign ============================ */
