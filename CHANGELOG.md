@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- 💪 **Muscle map.** Three places now show which muscles your training actually reaches, drawn on a
+  front-and-back body diagram shaded like the activity heatmap — more accent means more work.
+  - **Stats → Muscle balance** aggregates a week, 30 days, 90 days or everything, lists your
+    hardest-worked muscles with their set counts, and names the ones that got *nothing* in that
+    period. That last list is the point of the card: the gaps are what you'd otherwise never notice.
+    Tap any muscle to read its name and volume.
+  - **Routine editor** previews what a session hits as you build it, so a hole in the plan shows up
+    before you train around it for a month.
+  - **The finish screen** shows what you just trained.
+  - Load is counted in *effective sets* — a set counts fully for the exercise's target muscle and
+    partially for its supporting ones — not in kilograms, because 100 kg of leg press and 12 kg of
+    lateral raise say nothing about which muscle worked harder. Shading is relative within the
+    period you're looking at, so the map always reads as a balance rather than an absolute.
+  - Settings → Appearance → **Body diagram** switches between a male and female figure.
+  - The exercise dataset spells muscles inconsistently ("delts", "deltoids" and "shoulders" are one
+    muscle); all 50 spellings it uses are normalised onto the 18 the diagram can draw. Custom
+    exercises, which only carry a body part, fall back to it. The geometry is ~90 kB and loads on
+    demand, so the initial bundle is unchanged.
+- 🐛 **Fixed: finishing a workout from its last exercise could blank the whole app.** The
+  per-exercise weight sheet read the running workout without checking it was still there, and
+  finishing clears it while that sheet is still on screen.
 - ▶️ **Live demo** at [duartesantos8.github.io/openGym](https://duartesantos8.github.io/openGym/) —
   a browser-only build (`VITE_DEMO=1`) published to GitHub Pages on every push to `main`. It boots
   into guest mode with a seeded example profile (12 weeks of Push/Pull/Legs, weigh-ins, PRs) so

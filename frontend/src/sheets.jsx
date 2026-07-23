@@ -13,6 +13,8 @@ import Stepper from './components/Stepper.jsx'
 import Icon from './components/Icon.jsx'
 import { Button, Slider } from './components/ui.jsx'
 import { glyphOf, GLYPH_GROUPS, DEFAULT_GLYPH } from './lib/glyphs.js'
+import BodyMap from './components/BodyMap.jsx'
+import { loadOfWorkouts } from './lib/muscles.js'
 
 const S = () => useStore.getState().S
 const update = (...a) => useStore.getState().update(...a)
@@ -514,17 +516,24 @@ export function beginWorkout(routineId, bw) {
 function TopWeight({ entryIdx, close }) {
   const st = useStore(s => s.S)
   const A = st.active
-  const entry = A.entries[entryIdx]
-  const ex = EXIDX[entry.id]
-  const maxSet = Math.max(0, ...entry.sets.filter(s => s.done).map(s => s.w || 0))
-  const prevBest = Math.max((st.exWeights[entry.id] || {}).w || 0, bestWeightFor(st, entry.id))
-  const [v, setV] = useState(Math.max(maxSet, prevBest) || entry.target.weight || 0)
+  // The workout can end underneath this sheet: finishing from the last exercise clears
+  // `active`, and this re-renders before the sheet is torn down. Everything below is
+  // read defensively and the sheet dismisses itself — reading A.entries straight took
+  // the whole app down with it. Hooks still run unconditionally, so the bail-out has
+  // to sit after every one of them.
+  const entry = A ? A.entries[entryIdx] : null
+  const ex = entry && EXIDX[entry.id]
+  const maxSet = entry ? Math.max(0, ...entry.sets.filter(s => s.done).map(s => s.w || 0)) : 0
+  const prevBest = entry ? Math.max((st.exWeights[entry.id] || {}).w || 0, bestWeightFor(st, entry.id)) : 0
+  const [v, setV] = useState(entry ? (Math.max(maxSet, prevBest) || entry.target.weight || 0) : 0)
+  useEffect(() => { if (!entry) close() }, [!entry])
 
-  const units = supersetUnits(A.entries)
-  const unit = unitOf(units, entryIdx)
-  const unitDone = unit.every(i => A.entries[i].sets.every(s => s.done))
+  const units = supersetUnits(A ? A.entries : [])
+  const unit = entry ? unitOf(units, entryIdx) : []
+  const unitDone = !!entry && unit.every(i => A.entries[i].sets.every(s => s.done))
   const unitIdx = units.findIndex(u => u === unit)
   const isLastUnit = unitIdx === units.length - 1
+  if (!entry || !ex) return null
 
   const commit = advance => {
     const n = Math.round((v || 0) * 10) / 10
@@ -579,6 +588,9 @@ function FinishSummary({ w, prs, close }) {
       <div className="tile"><div className="l">{t('PRs')}</div><div className="v" style={{ fontSize: 20 }}>{prs.length || '—'}</div></div>
     </div>
     {prs.length > 0 && <div style={{ textAlign: 'left', marginBottom: 12 }}>{prs.map(id => <div key={id} className="small accent capitalize row" style={{ gap: 5 }}><Icon name="trophy" style={{ fontSize: 13 }} />{t('New PR:')} {(EXIDX[id] || {}).n || id}</div>)}</div>}
+    <h4 className="sec" style={{ textAlign: 'left' }}>{t('What you just trained')}</h4>
+    <BodyMap load={loadOfWorkouts([w])} body={st.body} />
+    <div style={{ height: 14 }} />
     <Button variant="primary" onClick={() => { close(); nav('/home') }}>{t('Nice!')}</Button>
   </div>
 }

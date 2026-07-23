@@ -10,6 +10,8 @@ import { glyphPicker, exercisePicker, exConfigSheet, confirmSheet } from '../she
 import Icon from '../components/Icon.jsx'
 import { glyphOf } from '../lib/glyphs.js'
 import { Button } from '../components/ui.jsx'
+import BodyMap from '../components/BodyMap.jsx'
+import { loadOfRoutine, rankOf, MUSCLE_NAME } from '../lib/muscles.js'
 
 export default function RoutineEdit() {
   const nav = useNavigate()
@@ -64,6 +66,20 @@ export default function RoutineEdit() {
         </div>
       </div>
     })}</div> : <div className="empty"><div className="ico"><Icon name="dumbbell" /></div>{t('No exercises yet — add your first one.')}</div>}
+
+    {/* Coverage of the routine as planned, so a gap shows up while you're building it
+        rather than after a month of training around it. */}
+    {r.ex.length > 0 && (() => {
+      const load = loadOfRoutine(r)
+      const { worked } = rankOf(load)
+      return <div className="card" style={{ marginTop: 12 }}>
+        <h2>{t('What this session hits')}</h2>
+        <BodyMap load={load} body={S.body} />
+        <div className="mchips">
+          {worked.slice(0, 6).map(m => <span key={m} className="mchip">{t(MUSCLE_NAME[m])}</span>)}
+        </div>
+      </div>
+    })()}
 
     <div className="small dim row" style={{ margin: '10px 2px', gap: 5 }}><Icon name="link" style={{ fontSize: 13 }} />{t('Tap the link button on an exercise to superset it with the one above — you’ll do them back-to-back.')}</div>
     <Button variant="primary" onClick={() => exercisePicker(ex => exConfigSheet(ex, null, cfg => edit(x => { x.push({ id: ex.id, ...cfg }) })))} icon="plus">{t('Add exercise')}</Button>

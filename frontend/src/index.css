@@ -664,6 +664,38 @@ h4.sec{
 }
 .hm-legend .hm-c{width:10px;height:10px}
 
+/* --- muscle map --- */
+/* Reuses the .hm-c level ramp above, so one accent scale means one thing app-wide. */
+/* An untrained muscle is derived from the text colour rather than a fixed surface, so
+   the body keeps the same contrast in both themes — pinned to --surface-2 it was all
+   but invisible on a white card. */
+.bodymap{
+  display:flex;gap:6px;justify-content:center;align-items:flex-start;
+  --bm-base:color-mix(in srgb,var(--label) 11%,var(--surface));
+}
+.bm-v{flex:1;min-width:0;height:auto;max-height:min(46vh,340px)}
+.bm-ph{height:200px}                       /* holds the space while the geometry loads */
+.bm-sil{fill:color-mix(in srgb,var(--label) 18%,var(--surface))}
+.bm-m{fill:var(--bm-base);transition:fill var(--med) var(--ease)}
+.bm-m.l1{fill:color-mix(in srgb,var(--acc) 32%,var(--bm-base))}
+.bm-m.l2{fill:color-mix(in srgb,var(--acc) 56%,var(--bm-base))}
+.bm-m.l3{fill:color-mix(in srgb,var(--acc) 78%,var(--bm-base))}
+.bm-m.l4{fill:var(--acc)}
+.bm-m.sel{stroke:var(--label);stroke-width:7}
+.bodymap.tappable .bm-m{cursor:pointer}
+/* A hairline in the surface colour separates neighbouring muscles; the artwork has no
+   outline path of its own, so without this the body reads as one flat blob. */
+.bm-v path{stroke:var(--surface);stroke-width:2.5;stroke-linejoin:round}
+
+.mrow{display:flex;align-items:center;gap:9px;padding:5px 0}
+.mrow .nm{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .bar{width:74px;height:5px;border-radius:3px;background:var(--surface-2);flex:none;overflow:hidden}
+.mrow .bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.mrow .v{font-size:12px;color:var(--label-2);min-width:52px;text-align:right;flex:none}
+.mchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.mchip{font-size:12px;padding:4px 9px;border-radius:99px;background:var(--surface-2);color:var(--label-2)}
+.mchip.miss{background:color-mix(in srgb,var(--orange) 16%,transparent);color:var(--orange)}
+
 /* --- stat tiles --- */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .tile{background:var(--surface);border-radius:var(--r-card);padding:14px}

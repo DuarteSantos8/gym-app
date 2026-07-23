@@ -87,6 +87,15 @@ export default function Settings() {
           onChange={v => update(s => { s.theme = v })}
         />
       </Row>
+      {/* Purely how the muscle map is drawn — nothing else in the app reads this. */}
+      <Row icon="figureStrength" iconTint="var(--teal)" title={t('Body diagram')}>
+        <Segmented
+          className="seg-inline"
+          options={[{ value: 'male', label: t('Male') }, { value: 'female', label: t('Female') }]}
+          value={S.body === 'female' ? 'female' : 'male'}
+          onChange={v => update(s => { s.body = v })}
+        />
+      </Row>
       <div className="lrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 12, paddingTop: 13, paddingBottom: 14 }}>
         <span className="lrow-t">{t('Accent color')}</span>
         <div className="swatches">
