@@ -6,6 +6,7 @@ import { ACCENTS, todayISO, localTZ } from '../lib/format.js'
 import { webauthnOK, passkeyLogin, passkeyRegister, IS_ANDROID } from '../lib/api.js'
 import { pushSupported, enablePush, disablePush, sendTestPush } from '../lib/push.js'
 import { t, LANGS, INSTR_LANGS } from '../lib/i18n.js'
+import { DEMO, REPO } from '../lib/demo.js'
 import { loadStarterPlan, confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
 import { Section, Row, SelectRow, Switch, Segmented, Button, TextField } from '../components/ui.jsx'
@@ -14,7 +15,7 @@ export default function Settings() {
   const nav = useNavigate()
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
-  const { update, replaceState, setUser, pullState, pushState, signOut } = useStore()
+  const { update, replaceState, setUser, pullState, pushState, signOut, resetDemo } = useStore()
   const toast = useUI(s => s.toast)
   const fileRef = useRef(null)
 
@@ -47,9 +48,15 @@ export default function Settings() {
       <div style={{ flex: 1, marginLeft: 10 }}><h1>{t('Settings')}</h1></div>
     </div>
 
-    {/* ---------- account ---------- */}
-    <Section title={t('Account')}>
-      {user ? <>
+    {/* ---------- account (demo builds have nothing to sign in to) ---------- */}
+    <Section title={DEMO ? t('Demo') : t('Account')}>
+      {DEMO ? <>
+        <Row icon="sparkles" iconTint="var(--acc)" title={t('You’re in the demo')} subtitle={t('Example data, stored only in this browser — change anything you like.')} />
+        <Row icon="reset" iconTint="var(--blue)" title={t('Reset demo data')} accessory="chevron"
+          onClick={() => confirmSheet({ title: t('Reset demo data?'), message: t('Puts the example plan, workouts and weigh-ins back the way they started.'), confirmText: t('Reset'), onConfirm: () => { resetDemo(); nav('/home'); toast(t('Demo data reset')) } })} />
+        <Row icon="rocket" iconTint="var(--indigo)" title={t('Self-host openGym')} subtitle={t('Passkey sign-in, sync across your devices, your own data.')} accessory="chevron"
+          onClick={() => window.open(REPO, '_blank', 'noopener')} />
+      </> : user ? <>
         <Row icon="personCircle" iconTint="var(--grey)" title={user.name} subtitle={t('Signed in with passkey — data syncs to this profile.')} />
         {user.admin && <Row icon="wrench" iconTint="var(--indigo)" title={t('Admin dashboard')} accessory="chevron" onClick={() => nav('/admin')} />}
         <Row icon="signOut" iconTint="var(--red)" title={t('Sign out')} danger onClick={() => confirmSheet({ title: t('Sign out?'), message: t('Your data is synced to your profile first, then cleared from this device.'), confirmText: t('Sign out'), danger: true, onConfirm: () => { signOut(); nav('/home') } })} />
@@ -60,10 +67,10 @@ export default function Settings() {
         <Row icon="lock" iconTint="var(--grey)" title={t('Passkeys not supported in this browser.')} />
       )}
     </Section>
-    {!user && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
+    {!user && !DEMO && <p className="sect-f" style={{ marginTop: -18, marginBottom: 22 }}>{t('Guest mode — data lives only in this browser.')}</p>}
 
     {/* ---------- appearance ---------- */}
-    <Section title={t('Appearance')} footer={t('synced with your profile')}>
+    <Section title={t('Appearance')} footer={DEMO ? undefined : t('synced with your profile')}>
       <SelectRow
         icon="globe" iconTint="var(--blue)" title={t('Language')}
         value={S.lang || 'en'} onChange={v => update(s => { s.lang = v })}

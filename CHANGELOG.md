@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- ▶️ **Live demo** at [duartesantos8.github.io/openGym](https://duartesantos8.github.io/openGym/) —
+  a browser-only build (`VITE_DEMO=1`) published to GitHub Pages on every push to `main`. It boots
+  into guest mode with a seeded example profile (12 weeks of Push/Pull/Legs, weigh-ins, PRs) so
+  every screen has something to show, and it never talks to a server. Passkeys, sync and the admin
+  dashboard stay exclusive to self-hosted instances, which is where the backend lives.
+- 🖼️ Builds can point the exercise media elsewhere via `VITE_IMG_BASE` / `VITE_GIF_BASE` — the demo
+  serves the ~140 MB dataset from a CDN instead of shipping it. The default (`img/` and `gif/` next
+  to the app) is unchanged.
+
 ## v1.2.0 — 2026-07-23
 
 A complete visual redesign. Same app, same data — every screen redrawn.

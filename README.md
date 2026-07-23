@@ -37,6 +37,16 @@ No account on someone else's server, no subscription, no ads. Just `docker compo
 </table>
 </div>
 
+<div align="center">
+
+### [▶ Try the live demo](https://duartesantos8.github.io/openGym/)
+
+No signup, nothing to install — it runs entirely in your browser on example data.<br>
+<sub>There's no server behind the demo, so passkey sign-in, sync across devices and the
+admin dashboard only exist in a self-hosted instance.</sub>
+
+</div>
+
 ## Why
 
 Most workout apps lock your data behind a login on their servers, nag you to upgrade, or

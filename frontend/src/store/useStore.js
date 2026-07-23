@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { api } from '../lib/api.js'
 import { localTZ } from '../lib/format.js'
 import { registerCustom } from '../lib/exercises.js'
+import { DEMO, DEMO_SEEDED } from '../lib/demo.js'
 
 const KEY = 'gym_state_v1'
 export const DEF = {
@@ -98,8 +99,26 @@ export const useStore = create((set, get) => {
       persist(clone(DEF), false)
     },
 
+    // Demo build only: drop the seeded example profile back in (Settings → "Reset demo data").
+    // Dynamic import so the generator never ships in a self-hosted bundle.
+    async resetDemo() {
+      const { buildDemoState } = await import('../lib/demoSeed.js')
+      localStorage.removeItem('gym_dirty')
+      persist(Object.assign(clone(DEF), buildDemoState()), false)
+    },
+
     // Boot: ask the server who we are, then pull.
     async boot() {
+      // Demo build (GitHub Pages): no backend at all — seed once, stay in guest mode.
+      if (DEMO) {
+        if (!localStorage.getItem(DEMO_SEEDED)) {
+          localStorage.setItem(DEMO_SEEDED, '1')
+          await get().resetDemo()
+        }
+        get().setGuest(true)
+        set({ ready: true })
+        return
+      }
       try {
         const me = await api('/api/me')
         get().setUser(me.user)
