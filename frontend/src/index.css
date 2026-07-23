@@ -603,7 +603,7 @@ h4.sec{
 .glyph-cell{
   aspect-ratio:1;border-radius:13px;background:var(--surface);
   display:flex;align-items:center;justify-content:center;font-size:24px;
-  color:var(--label-2);transition:background var(--fast),color var(--fast),transform var(--fast);
+  color:var(--label);transition:background var(--fast),color var(--fast),transform var(--fast);
 }
 .glyph-cell:active{transform:scale(.92)}
 .glyph-cell.on{background:var(--acc);color:var(--on-acc)}
