@@ -229,7 +229,7 @@ h4.sec{
 .lrow-t{font-size:17px;letter-spacing:-.012em;line-height:1.25}
 .lrow-s{font-size:13px;color:var(--label-2);line-height:1.3}
 .lrow-v{color:var(--label-2);font-size:17px;letter-spacing:-.012em;flex:none}
-.lrow-c{color:var(--label-3);font-size:15px;flex:none;--icon-stroke:2.4}
+.lrow-c{color:var(--label);font-size:15px;flex:none;--icon-stroke:2.4}
 .lrow-k{color:var(--acc);font-size:17px;flex:none;--icon-stroke:2.4}
 .lrow.danger,.lrow.danger .lrow-t{color:var(--red)}
 
@@ -334,7 +334,7 @@ h4.sec{
 .item .tt{font-size:16px;font-weight:400;line-height:1.25;letter-spacing:-.009em}
 .item .ss{color:var(--label-2);font-size:13px;margin-top:2px}
 .item .grow{flex:1;min-width:0}
-.chev{color:var(--label-3);flex:none;font-size:15px;--icon-stroke:2.4}
+.chev{color:var(--label);flex:none;font-size:15px;--icon-stroke:2.4}
 .tag{
   display:inline-flex;align-items:center;gap:3px;background:var(--surface-2);
   color:var(--label-2);border-radius:6px;padding:3px 7px;font-size:12px;
@@ -730,7 +730,7 @@ h4.sec{
 
 /* ---------------------------------------------------------------- misc --- */
 .empty{text-align:center;color:var(--label-2);padding:44px 20px;font-size:15px;line-height:1.45}
-.empty .ico{font-size:34px;color:var(--label-3);margin-bottom:12px;display:flex;justify-content:center}
+.empty .ico{font-size:34px;color:var(--label-2);margin-bottom:12px;display:flex;justify-content:center}
 .steps-list{
   padding-left:18px;color:var(--label-2);font-size:15px;line-height:1.5;
   display:flex;flex-direction:column;gap:9px;
